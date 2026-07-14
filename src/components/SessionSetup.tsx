@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DEVICES, GAMES, MARKETS } from '../config';
-import { isoWeekOf, pad2 } from '../lib/naming';
+import { formatSheetDate, isoWeekOf, pad2, suggestSessionOfWeek } from '../lib/naming';
 import { backend } from '../google';
 import type { Session } from '../types';
 
@@ -22,8 +22,9 @@ export function SessionSetup({ onStart }: Props) {
   const marketCfg = MARKETS[market];
   const { isoYear, weekNumber } = isoWeekOf(testDate);
 
-  // Auto-suggest session of week: TH → 2 if a session already exists this
-  // week in the Sheet, else 1; single-session markets are always 1.
+  // Auto-suggest session of week for TH: each distinct test DAY this week is
+  // one session (day 1 e.g. Wednesday → 1, day 2 e.g. Friday → 2; re-opening
+  // an already-logged day keeps its number). Single-session markets: always 1.
   useEffect(() => {
     let cancelled = false;
     if (marketCfg.sessionsPerWeek === 1) {
@@ -32,10 +33,10 @@ export function SessionSetup({ onStart }: Props) {
       return;
     }
     backend
-      .hasSessionThisWeek({ market, isoYear, weekNumber })
-      .then((has) => {
+      .weekDates({ market, weekNumber })
+      .then((dates) => {
         if (!cancelled) {
-          setSessionOfWeek(has ? 2 : 1);
+          setSessionOfWeek(suggestSessionOfWeek(dates, formatSheetDate(testDate)));
           setAutoSuggested(true);
         }
       })
@@ -45,7 +46,7 @@ export function SessionSetup({ onStart }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [market, isoYear, weekNumber, marketCfg.sessionsPerWeek]);
+  }, [market, isoYear, weekNumber, testDate, marketCfg.sessionsPerWeek]);
 
   function start() {
     const game = GAMES[gameIdx];
@@ -147,7 +148,7 @@ export function SessionSetup({ onStart }: Props) {
           </div>
           {autoSuggested && (
             <div className="auto-note">
-              Auto-suggested from this week&apos;s heatmap — tap to override.
+              Auto-suggested from this week&apos;s test days — tap to override.
             </div>
           )}
         </div>

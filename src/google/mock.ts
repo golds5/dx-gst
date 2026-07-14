@@ -8,7 +8,7 @@ import {
   buildFolderPath,
   buildVideoFilename,
   formatSheetDate,
-  nextAvailableName,
+  stemOf,
 } from '../lib/naming';
 import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from '../lib/labels';
 import type {
@@ -64,9 +64,15 @@ export const mockBackend: GoogleBackend = {
       deviceId: session.device,
       sourceFileName,
     });
-    const finalName = nextAvailableName(desired, existing);
-    log(`prepared upload "${finalName}" → ${folderPath}`);
-    return { sessionUri: `mock-session:${folderPath}/${finalName}`, finalName };
+    // One video per slot: same stem → replace the existing file in place.
+    const prevIndex = existing.findIndex((n) => stemOf(n) === stemOf(desired));
+    if (prevIndex !== -1) existing.splice(prevIndex, 1);
+    log(`prepared upload "${desired}" → ${folderPath}${prevIndex !== -1 ? ' (replacing)' : ''}`);
+    return {
+      sessionUri: `mock-session:${folderPath}/${desired}`,
+      finalName: desired,
+      replaced: prevIndex !== -1,
+    };
   },
 
   async uploadVideo({ file, prepared, onProgress }: UploadArgs) {
@@ -118,9 +124,9 @@ export const mockBackend: GoogleBackend = {
     );
   },
 
-  async hasSessionThisWeek({ market, weekNumber }) {
+  async weekDates({ market, weekNumber }) {
     await sleep(100);
     const rows = state.tabs.get(MARKETS[market].sheetTab) ?? [];
-    return rows.some((r) => r.week === weekNumber);
+    return rows.filter((r) => r.week === weekNumber).map((r) => r.date);
   },
 };

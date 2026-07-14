@@ -105,5 +105,6 @@ compiled in from `src/config.ts`.
   Sheets write, never re-uploads.
 - Unsaved slots trigger a leave-page warning (`beforeunload`), and switching
   sessions with unlogged slot data asks for confirmation.
-- Re-submitting a slot that already has a video this session uploads as
-  `_v2`, `_v3`, … with a visible warning — nothing is overwritten.
+- One video per slot: re-submitting a slot that already has a video this
+  session **replaces** the file in place (same Drive file id, so heatmap
+  links stay valid) with a visible notice.

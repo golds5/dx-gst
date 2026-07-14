@@ -7,12 +7,12 @@ import {
   RATING_COLORS,
   SHEET_FIRST_BRAND_COL,
   SPREADSHEET_ID,
-} from '../src/config';
-import type { BrandConfig } from '../src/config';
-import { formatSheetDate } from '../src/lib/naming';
-import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from '../src/lib/labels';
-import { apiError, gFetch, handleError } from './_utils';
-import type { ApiRequest, ApiResponse } from './_utils';
+} from '../src/config.js';
+import type { BrandConfig } from '../src/config.js';
+import { formatSheetDate } from '../src/lib/naming.js';
+import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from '../src/lib/labels.js';
+import { apiError, gFetch, handleError } from './_utils.js';
+import type { ApiRequest, ApiResponse } from './_utils.js';
 
 const BASE = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
 const SCAN_ROWS = 500;

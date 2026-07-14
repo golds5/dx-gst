@@ -23,7 +23,11 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
   const { brand, status } = slot;
   const busy = status === 'uploading';
   const done = status === 'logged';
-  const locked = busy || done || status === 'uploaded';
+  // Mid-pipeline the whole card is locked. A logged slot keeps rating/notes
+  // read-only but its phone frame stays tappable: picking a new video
+  // replaces the uploaded one (one video per slot).
+  const pipelineBusy = busy || status === 'uploaded';
+  const locked = pipelineBusy || done;
 
   const previewUrl = useMemo(
     () => (slot.videoFile ? URL.createObjectURL(slot.videoFile) : null),
@@ -48,7 +52,7 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
   }
 
   function openPicker() {
-    if (!locked) inputRef.current?.click();
+    if (!pipelineBusy) inputRef.current?.click();
   }
 
   return (
@@ -82,7 +86,7 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
       />
 
       <div
-        className={`slot${slot.videoFile ? ' filled' : ''}${locked ? ' busy' : ''}`}
+        className={`slot${slot.videoFile ? ' filled' : ''}${pipelineBusy ? ' busy' : ''}`}
         role="button"
         tabIndex={0}
         aria-label={`Upload screen recording for ${brand.name}`}
@@ -96,7 +100,7 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
               <div className="fname">{slot.uploadedName ?? slot.videoFile!.name}</div>
               <div className="fsize">
                 {(slot.videoFile!.size / 1e6).toFixed(1)} MB
-                {!locked && ' · tap to replace'}
+                {!pipelineBusy && (done ? ' · tap to replace video' : ' · tap to replace')}
               </div>
               {busy && (
                 <>

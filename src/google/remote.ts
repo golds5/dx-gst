@@ -124,15 +124,15 @@ export const remoteBackend: GoogleBackend = {
     await callApi('/api/log-slot', args);
   },
 
-  async hasSessionThisWeek({ market, isoYear, weekNumber }) {
+  async weekDates({ market, weekNumber }) {
     try {
       const resp = await callApi(
-        `/api/has-session?market=${encodeURIComponent(market)}&year=${isoYear}&week=${weekNumber}`,
+        `/api/week-info?market=${encodeURIComponent(market)}&week=${weekNumber}`,
       );
-      const data = (await resp.json()) as { hasSession: boolean };
-      return data.hasSession;
+      const data = (await resp.json()) as { dates: string[] };
+      return data.dates;
     } catch {
-      return false; // auto-suggest is a nicety — never block setup on it
+      return []; // auto-suggest is a nicety — never block setup on it
     }
   },
 };

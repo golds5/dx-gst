@@ -1,8 +1,8 @@
 // Pure functions for filename / folder / date logic (Sections 5 & 6 of the
 // spec). No browser or Google APIs here — everything is unit-tested.
 
-import { DRIVE_BASE_FOLDER_NAME } from '../config';
-import type { BrandConfig } from '../config';
+import { DRIVE_BASE_FOLDER_NAME } from '../config.js';
+import type { BrandConfig } from '../config.js';
 
 export function pad2(n: number): string {
   return String(n).padStart(2, '0');
@@ -75,23 +75,11 @@ export function buildFolderPath(
   return [DRIVE_BASE_FOLDER_NAME, String(isoYear), `W${pad2(weekNumber)}`, market];
 }
 
-// If `desired` already exists in the folder, append _v2, _v3, … before the
-// extension until the name is free. Collision is checked on the stem
-// (extension ignored) so re-uploading the same slot as .mp4 after a .mov
-// still versions instead of silently coexisting.
-function stemOf(name: string): string {
+// Filename without its extension. Used to detect that a slot already has a
+// video this session (one video per slot — a re-upload replaces it in place,
+// even if the extension changed from .mov to .mp4).
+export function stemOf(name: string): string {
   return name.replace(/\.[A-Za-z0-9]+$/, '');
-}
-
-export function nextAvailableName(desired: string, existing: string[]): string {
-  const takenStems = new Set(existing.map(stemOf));
-  const m = /^(.*)\.([A-Za-z0-9]+)$/.exec(desired);
-  const stem = m ? m[1] : desired;
-  const ext = m ? `.${m[2]}` : '';
-  if (!takenStems.has(stem)) return desired;
-  for (let v = 2; ; v++) {
-    if (!takenStems.has(`${stem}_v${v}`)) return `${stem}_v${v}${ext}`;
-  }
 }
 
 // Sheet column B date format: `Ddd, DD/MM` e.g. `Wed, 24/06`.
@@ -101,6 +89,26 @@ export function formatSheetDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(Date.UTC(y, m - 1, d));
   return `${DAY_NAMES[date.getUTCDay()]}, ${pad2(d)}/${pad2(m)}`;
+}
+
+// Session-of-week suggestion for two-sessions-per-week markets (TH): each
+// distinct test DAY in the week is one session. Given the sheet-format dates
+// already logged this week and the chosen test date, suggest which session
+// this is: re-opening an already-logged day keeps its number; a new day gets
+// the next number. Result capped at `max`.
+export function suggestSessionOfWeek(
+  loggedDates: string[], // column-B strings, e.g. 'Wed, 24/06'
+  chosenDate: string, // same format
+  max: 1 | 2 = 2,
+): 1 | 2 {
+  const dayKey = (s: string) => {
+    const m = /(\d{1,2})\/(\d{1,2})/.exec(s);
+    return m ? Number(m[2]) * 100 + Number(m[1]) : 0; // MM*100+DD, sortable
+  };
+  const distinct = [...new Set(loggedDates)].sort((a, b) => dayKey(a) - dayKey(b));
+  const idx = distinct.indexOf(chosenDate);
+  const suggested = idx !== -1 ? idx + 1 : distinct.length + 1;
+  return Math.min(suggested, max) as 1 | 2;
 }
 
 // Notes validation (Section 4.3): if rating is slight/strong, notes must

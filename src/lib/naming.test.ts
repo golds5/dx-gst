@@ -7,7 +7,8 @@ import {
   formatSheetDate,
   hasTimestamp,
   isoWeekOf,
-  nextAvailableName,
+  stemOf,
+  suggestSessionOfWeek,
   validateSlotNotes,
 } from './naming';
 
@@ -114,27 +115,40 @@ describe('buildFolderPath', () => {
   });
 });
 
-describe('nextAvailableName', () => {
-  const base = '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S.mp4';
-  it('returns the name unchanged when free', () => {
-    expect(nextAvailableName(base, [])).toBe(base);
-  });
-  it('appends _v2 before the extension when taken', () => {
-    expect(nextAvailableName(base, [base])).toBe(
-      '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S_v2.mp4',
+describe('stemOf', () => {
+  it('strips the extension', () => {
+    expect(stemOf('2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S.mp4')).toBe(
+      '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S',
     );
   });
-  it('keeps counting past _v2', () => {
-    const v2 = '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S_v2.mp4';
-    expect(nextAvailableName(base, [base, v2])).toBe(
-      '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S_v3.mp4',
-    );
+  it('matches the same slot across extensions (.mov vs .mp4)', () => {
+    expect(stemOf('clip.mov')).toBe(stemOf('clip.mp4'));
   });
-  it('detects collisions across extensions (same slot re-uploaded as .mov)', () => {
-    const mov = '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S.mov';
-    expect(nextAvailableName(base, [mov])).toBe(
-      '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S_v2.mp4',
-    );
+  it('leaves extension-less names unchanged', () => {
+    expect(stemOf('recording')).toBe('recording');
+  });
+});
+
+describe('suggestSessionOfWeek', () => {
+  it('suggests 1 when nothing is logged this week', () => {
+    expect(suggestSessionOfWeek([], 'Wed, 15/07')).toBe(1);
+  });
+  it('suggests 2 on a new day after day 1 exists (Wed then Fri)', () => {
+    expect(suggestSessionOfWeek(['Wed, 15/07'], 'Fri, 17/07')).toBe(2);
+  });
+  it('keeps session 1 when re-opening day 1 later the same day', () => {
+    expect(suggestSessionOfWeek(['Wed, 15/07'], 'Wed, 15/07')).toBe(1);
+  });
+  it('keeps session 2 when re-opening day 2', () => {
+    expect(suggestSessionOfWeek(['Wed, 15/07', 'Fri, 17/07'], 'Fri, 17/07')).toBe(2);
+  });
+  it('ranks days chronologically regardless of sheet order (newest rows first)', () => {
+    expect(suggestSessionOfWeek(['Fri, 17/07', 'Wed, 15/07'], 'Wed, 15/07')).toBe(1);
+  });
+  it('caps at 2', () => {
+    expect(
+      suggestSessionOfWeek(['Mon, 13/07', 'Wed, 15/07'], 'Fri, 17/07'),
+    ).toBe(2);
   });
 });
 

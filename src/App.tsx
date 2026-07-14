@@ -73,6 +73,9 @@ export default function App() {
     if (!currentSession || !slot?.videoFile || !slot.rating) return;
 
     const retryLoggingOnly = slot.errorPhase === 'sheets' && Boolean(slot.driveLink);
+    // Carried locally — React state updates are async, so reading the link
+    // back from state right after upload could see a stale value.
+    let driveLink = slot.driveLink;
 
     if (!retryLoggingOnly) {
       updateSlot(index, {
@@ -83,19 +86,16 @@ export default function App() {
         errorPhase: undefined,
       });
       try {
-        // a+b. Server ensures the folder path, generates the filename
-        // (with _vN if this slot already has a video), opens the session.
+        // a+b. Server ensures the folder path, generates the filename, and
+        // opens the session (replacing the slot's existing video if any).
         const prepared = await backend.prepareUpload({
           session: currentSession,
           brand: slot.brand,
           sourceFileName: slot.videoFile.name,
           contentType: slot.videoFile.type || 'video/mp4',
         });
-        const version = /_v(\d+)\.[^.]+$/.exec(prepared.finalName)?.[1];
-        if (version) {
-          showToast(
-            `A video for this slot already exists this session — uploading as v${version}.`,
-          );
+        if (prepared.replaced) {
+          showToast('This slot already had a video — replacing it with the new one.');
         }
         const { fileId, webViewLink } = await backend.uploadVideo({
           file: slot.videoFile,
@@ -104,6 +104,7 @@ export default function App() {
           onStatus: (status) =>
             updateSlot(index, { reconnecting: status === 'reconnecting' }),
         });
+        driveLink = webViewLink;
         updateSlot(index, {
           status: 'uploaded',
           driveFileId: fileId,
@@ -127,14 +128,13 @@ export default function App() {
     // c. Write the heatmap cell. The video is already in Drive at this
     // point — a failure here must offer "Retry logging", never re-upload.
     try {
-      const latest = slotsRef.current[index];
       await backend.logSlot({
         session: currentSession,
         brandIndex: index,
-        brand: latest.brand,
-        rating: latest.rating!,
-        notes: latest.notes ?? '',
-        driveLink: latest.driveLink!,
+        brand: slot.brand,
+        rating: slot.rating,
+        notes: slot.notes ?? '',
+        driveLink: driveLink!,
       });
       updateSlot(index, { status: 'logged' });
     } catch (err) {
@@ -181,8 +181,19 @@ export default function App() {
           slots={slots}
           onPickFile={(i, file) => {
             const s = slotsRef.current[i];
-            if (s.status === 'empty' || s.status === 'error') {
-              updateSlot(i, { videoFile: file, uploadedName: undefined });
+            // Re-picking is allowed any time except mid-pipeline; picking a
+            // new video on a logged slot re-opens it for a replacement.
+            if (s.status !== 'uploading' && s.status !== 'uploaded') {
+              updateSlot(i, {
+                videoFile: file,
+                status: 'empty',
+                progress: 0,
+                uploadedName: undefined,
+                driveFileId: undefined,
+                driveLink: undefined,
+                error: undefined,
+                errorPhase: undefined,
+              });
             }
           }}
           onRate={(i, rating: Rating) => updateSlot(i, { rating })}

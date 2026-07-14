@@ -14,7 +14,8 @@ export type PrepareUploadArgs = {
 
 export type PreparedUpload = {
   sessionUri: string; // pre-authorized Google resumable session URI
-  finalName: string; // may carry a _vN suffix
+  finalName: string;
+  replaced: boolean; // true when this upload replaces the slot's existing video
 };
 
 export type UploadArgs = {
@@ -39,9 +40,6 @@ export interface GoogleBackend {
   prepareUpload(args: PrepareUploadArgs): Promise<PreparedUpload>;
   uploadVideo(args: UploadArgs): Promise<{ fileId: string; webViewLink: string }>;
   logSlot(args: LogSlotArgs): Promise<void>;
-  hasSessionThisWeek(session: {
-    market: string;
-    isoYear: number;
-    weekNumber: number;
-  }): Promise<boolean>;
+  // Column-B dates already logged this ISO week (for session-day suggest).
+  weekDates(session: { market: string; weekNumber: number }): Promise<string[]>;
 }
