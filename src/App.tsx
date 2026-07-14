@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
-import { pad2 } from './lib/naming';
-import type { Rating, Session, SlotEntry } from './types';
+import { buildLagNotes, pad2 } from './lib/naming';
+import type { Session, SlotEntry } from './types';
 import { SessionSetup } from './components/SessionSetup';
 import { SlotGrid } from './components/SlotGrid';
 
@@ -37,7 +37,8 @@ export default function App() {
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       const dirty = slotsRef.current.some(
-        (s) => (s.videoFile || s.rating || s.notes) && s.status !== 'logged',
+        (s) => (s.videoFile || s.rating || s.notes || s.lagTags?.length || s.lagStart) &&
+          s.status !== 'logged',
       );
       if (dirty) {
         e.preventDefault();
@@ -57,7 +58,8 @@ export default function App() {
 
   function newSession() {
     const dirty = slotsRef.current.some(
-      (s) => (s.videoFile || s.rating || s.notes) && s.status !== 'logged',
+      (s) => (s.videoFile || s.rating || s.notes || s.lagTags?.length || s.lagStart) &&
+          s.status !== 'logged',
     );
     if (dirty && !window.confirm('Some slots are not logged yet. Leave this session?')) {
       return;
@@ -128,12 +130,21 @@ export default function App() {
     // c. Write the heatmap cell. The video is already in Drive at this
     // point — a failure here must offer "Retry logging", never re-upload.
     try {
+      const notes =
+        slot.rating === 'smooth'
+          ? ''
+          : buildLagNotes({
+              start: slot.lagStart,
+              end: slot.lagEnd,
+              tags: slot.lagTags,
+              text: slot.notes,
+            });
       await backend.logSlot({
         session: currentSession,
         brandIndex: index,
         brand: slot.brand,
         rating: slot.rating,
-        notes: slot.notes ?? '',
+        notes,
         driveLink: driveLink!,
       });
       updateSlot(index, { status: 'logged' });
@@ -196,8 +207,7 @@ export default function App() {
               });
             }
           }}
-          onRate={(i, rating: Rating) => updateSlot(i, { rating })}
-          onNotes={(i, notes) => updateSlot(i, { notes })}
+          onChange={(i, patch) => updateSlot(i, patch)}
           onSubmit={submitSlot}
           onNewSession={newSession}
         />

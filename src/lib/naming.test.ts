@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildFolderPath,
+  buildLagNotes,
   buildVideoFilename,
   camelPart,
   extensionOf,
+  formatClockInput,
   formatSheetDate,
-  hasTimestamp,
   isoWeekOf,
+  isValidClock,
   stemOf,
   suggestSessionOfWeek,
-  validateSlotNotes,
+  validateLagReport,
 } from './naming';
 
 const baseInput = {
@@ -170,19 +172,57 @@ describe('extensionOf', () => {
   });
 });
 
-describe('notes validation', () => {
-  it('accepts m:ss and mm:ss timestamps', () => {
-    expect(hasTimestamp('0:25 lag on spin')).toBe(true);
-    expect(hasTimestamp('lag at 12:05')).toBe(true);
-    expect(hasTimestamp('no timestamps here')).toBe(false);
+describe('clock input', () => {
+  it('formats digits into mm:ss while typing', () => {
+    expect(formatClockInput('0023')).toBe('00:23');
+    expect(formatClockInput('123')).toBe('1:23');
+    expect(formatClockInput('23')).toBe('23');
+    expect(formatClockInput('00:23')).toBe('00:23');
+    expect(formatClockInput('12345')).toBe('12:34');
   });
-  it('requires a timestamp for slight/strong lag', () => {
-    expect(validateSlotNotes('slight', 'laggy')).not.toBeNull();
-    expect(validateSlotNotes('strong', '')).not.toBeNull();
-    expect(validateSlotNotes('slight', '0:25–0:30 symbol delay')).toBeNull();
+  it('validates mm:ss with seconds < 60', () => {
+    expect(isValidClock('00:23')).toBe(true);
+    expect(isValidClock('1:20')).toBe(true);
+    expect(isValidClock('01:75')).toBe(false);
+    expect(isValidClock('23')).toBe(false);
+    expect(isValidClock('')).toBe(false);
   });
-  it('allows empty notes for smooth', () => {
-    expect(validateSlotNotes('smooth', '')).toBeNull();
-    expect(validateSlotNotes('smooth', undefined)).toBeNull();
+});
+
+describe('validateLagReport', () => {
+  const ok = { start: '00:23', end: '01:20', tags: ['Frame rate drop'], text: '' };
+  it('accepts a valid time frame with a preset tag', () => {
+    expect(validateLagReport(ok)).toBeNull();
+  });
+  it('accepts free text instead of a tag', () => {
+    expect(validateLagReport({ ...ok, tags: [], text: 'spins stall' })).toBeNull();
+  });
+  it('requires both clock fields to be valid', () => {
+    expect(validateLagReport({ ...ok, start: '' })).toContain('time frame');
+    expect(validateLagReport({ ...ok, end: '9' })).toContain('time frame');
+  });
+  it('requires end >= start', () => {
+    expect(validateLagReport({ ...ok, start: '02:00', end: '01:00' })).toContain('end time');
+  });
+  it('requires at least one tag or note text', () => {
+    expect(validateLagReport({ ...ok, tags: [], text: '  ' })).toContain('issue type');
+  });
+});
+
+describe('buildLagNotes', () => {
+  it('composes time frame, tags, and free text', () => {
+    expect(
+      buildLagNotes({
+        start: '00:23',
+        end: '01:20',
+        tags: ['Animation glitch', 'Frame rate drop'],
+        text: 'worst on bonus spins',
+      }),
+    ).toBe('00:23 - 01:20 — Animation glitch, Frame rate drop, worst on bonus spins');
+  });
+  it('works with tags only', () => {
+    expect(buildLagNotes({ start: '00:05', end: '00:10', tags: ['Black screen'] })).toBe(
+      '00:05 - 00:10 — Black screen',
+    );
   });
 });

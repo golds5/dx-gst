@@ -125,6 +125,18 @@ export const GAMES: GameConfig[] = [
   // TODO: extend with the full weekly rotation of provider/game pairs.
 ];
 
+// ─── Lag report presets ──────────────────────────────────────────────
+// Quick-pick issue types shown when rating is Slight or Strong lag.
+export const LAG_PRESETS = [
+  'Animation glitch',
+  'Frame rate drop',
+  'Black screen',
+  'Freeze / stuck',
+  'Slow loading',
+  'Delayed spin response',
+  'No music / sound',
+];
+
 // ─── Heatmap rating colors (Section 6 of the spec) ───────────────────
 export const RATING_COLORS = {
   smooth: { red: 0.72, green: 0.88, blue: 0.8 },

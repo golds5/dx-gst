@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { validateSlotNotes } from '../lib/naming';
+import { LAG_PRESETS } from '../config';
+import { buildLagNotes, formatClockInput, validateLagReport } from '../lib/naming';
 import type { Rating, SlotEntry } from '../types';
 
 const RATING_META: { key: Rating; cls: string; dot: string; label: string }[] = [
@@ -11,20 +12,19 @@ const RATING_META: { key: Rating; cls: string; dot: string; label: string }[] = 
 
 type Props = {
   slot: SlotEntry;
+  onChange: (patch: Partial<SlotEntry>) => void;
   onPickFile: (file: File) => void;
-  onRate: (rating: Rating) => void;
-  onNotes: (notes: string) => void;
   onSubmit: () => void;
-  onRetry: () => void;
+  onCollapse: () => void;
 };
 
-export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry }: Props) {
+export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { brand, status } = slot;
   const busy = status === 'uploading';
   const done = status === 'logged';
-  // Mid-pipeline the whole card is locked. A logged slot keeps rating/notes
-  // read-only but its phone frame stays tappable: picking a new video
+  // Mid-pipeline the whole card is locked. A logged slot keeps its report
+  // read-only but the phone frame stays tappable: picking a new video
   // replaces the uploaded one (one video per slot).
   const pipelineBusy = busy || status === 'uploaded';
   const locked = pipelineBusy || done;
@@ -39,10 +39,17 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
     };
   }, [previewUrl]);
 
-  const notesError = validateSlotNotes(slot.rating, slot.notes);
-  const showNotesError = Boolean(notesError && slot.rating && slot.rating !== 'smooth');
+  // Lag report is required (and shown) only for Slight / Strong.
+  const isLag = slot.rating === 'slight' || slot.rating === 'strong';
+  const report = {
+    start: slot.lagStart,
+    end: slot.lagEnd,
+    tags: slot.lagTags,
+    text: slot.notes,
+  };
+  const lagError = isLag ? validateLagReport(report) : null;
   const canSubmit =
-    Boolean(slot.videoFile && slot.rating && !notesError) &&
+    Boolean(slot.videoFile && slot.rating && !lagError) &&
     (status === 'empty' || status === 'error');
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
@@ -55,9 +62,18 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
     if (!pipelineBusy) inputRef.current?.click();
   }
 
+  function toggleTag(tag: string) {
+    const current = slot.lagTags ?? [];
+    onChange({
+      lagTags: current.includes(tag)
+        ? current.filter((t) => t !== tag)
+        : [...current, tag],
+    });
+  }
+
   return (
     <div
-      className={`card${brand.isCompetitor ? '' : ' pinned'}${done ? ' logged' : ''}${
+      className={`card expanded${brand.isCompetitor ? '' : ' pinned'}${done ? ' logged' : ''}${
         status === 'error' ? ' errored' : ''
       }`}
     >
@@ -75,6 +91,14 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
         ) : !brand.isCompetitor ? (
           <span className="pin">PINNED</span>
         ) : null}
+        <button
+          type="button"
+          className="collapse-btn"
+          onClick={onCollapse}
+          aria-label={`Collapse ${brand.name}`}
+        >
+          ✕
+        </button>
       </div>
 
       <input
@@ -85,114 +109,163 @@ export function SlotCard({ slot, onPickFile, onRate, onNotes, onSubmit, onRetry 
         onChange={handleFile}
       />
 
-      <div
-        className={`slot${slot.videoFile ? ' filled' : ''}${pipelineBusy ? ' busy' : ''}`}
-        role="button"
-        tabIndex={0}
-        aria-label={`Upload screen recording for ${brand.name}`}
-        onClick={openPicker}
-        onKeyDown={(e) => e.key === 'Enter' && openPicker()}
-      >
-        {previewUrl ? (
-          <>
-            <video src={previewUrl} muted playsInline preload="metadata" />
-            <div className="overlay">
-              <div className="fname">{slot.uploadedName ?? slot.videoFile!.name}</div>
-              <div className="fsize">
-                {(slot.videoFile!.size / 1e6).toFixed(1)} MB
-                {!pipelineBusy && (done ? ' · tap to replace video' : ' · tap to replace')}
-              </div>
-              {busy && (
-                <>
-                  <div className="progress-track">
+      <div className="card-body">
+        <div
+          className={`slot${slot.videoFile ? ' filled' : ''}${pipelineBusy ? ' busy' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`Upload screen recording for ${brand.name}`}
+          onClick={openPicker}
+          onKeyDown={(e) => e.key === 'Enter' && openPicker()}
+        >
+          {previewUrl ? (
+            <>
+              <video src={previewUrl} muted playsInline preload="metadata" />
+              <div className="overlay">
+                <div className="fname">{slot.uploadedName ?? slot.videoFile!.name}</div>
+                <div className="fsize">
+                  {(slot.videoFile!.size / 1e6).toFixed(1)} MB
+                  {!pipelineBusy &&
+                    (done ? ' · tap to replace video' : ' · tap to replace')}
+                </div>
+                {busy && (
+                  <>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{ width: `${slot.progress ?? 0}%` }}
+                      />
+                    </div>
                     <div
-                      className="progress-fill"
-                      style={{ width: `${slot.progress ?? 0}%` }}
-                    />
-                  </div>
-                  <div className={`progress-label${slot.reconnecting ? ' reconnect' : ''}`}>
-                    {slot.reconnecting ? 'Reconnecting…' : `${slot.progress ?? 0}%`}
-                  </div>
-                </>
-              )}
-              {done && slot.driveLink && (
-                <a
-                  className="drive"
-                  href={slot.driveLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+                      className={`progress-label${slot.reconnecting ? ' reconnect' : ''}`}
+                    >
+                      {slot.reconnecting ? 'Reconnecting…' : `${slot.progress ?? 0}%`}
+                    </div>
+                  </>
+                )}
+                {done && slot.driveLink && (
+                  <a
+                    className="drive"
+                    href={slot.driveLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View in Drive ↗
+                  </a>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <svg className="up-ic" viewBox="0 0 24 24">
+                <path
+                  d="M12 16V4m0 0l-4 4m4-4l4 4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" strokeLinecap="round" />
+              </svg>
+              <p>Tap to add screen recording</p>
+              <span className="fmt">MP4 / MOV · PORTRAIT</span>
+            </>
+          )}
+        </div>
+
+        <div className="controls">
+          <div>
+            <div className="rate-label">Gameplay rating — pick one</div>
+            <div className="rating">
+              {RATING_META.map((r) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  disabled={locked}
+                  className={slot.rating === r.key ? r.cls : ''}
+                  onClick={() => onChange({ rating: r.key })}
                 >
-                  View in Drive ↗
-                </a>
+                  <span className={`dot ${r.dot}`} />
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {isLag && (
+            <div className="notes">
+              <div className="rate-label">Issue time frame (mm:ss – mm:ss)</div>
+              <div className="time-range">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="00:23"
+                  value={slot.lagStart ?? ''}
+                  disabled={locked}
+                  onChange={(e) => onChange({ lagStart: formatClockInput(e.target.value) })}
+                />
+                <span className="time-sep">–</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="01:20"
+                  value={slot.lagEnd ?? ''}
+                  disabled={locked}
+                  onChange={(e) => onChange({ lagEnd: formatClockInput(e.target.value) })}
+                />
+              </div>
+
+              <div className="rate-label">Issue type — tap all that apply</div>
+              <div className="preset-row">
+                {LAG_PRESETS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    disabled={locked}
+                    className={`preset${slot.lagTags?.includes(tag) ? ' sel' : ''}`}
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                placeholder="Extra details (optional if an issue type is picked)…"
+                value={slot.notes ?? ''}
+                disabled={locked}
+                onChange={(e) => onChange({ notes: e.target.value })}
+              />
+              {lagError ? (
+                <div className="invalid-msg">{lagError}</div>
+              ) : (
+                <div className="hint">
+                  <b>Will log:</b> {buildLagNotes(report)}
+                </div>
               )}
             </div>
-          </>
-        ) : (
-          <>
-            <svg className="up-ic" viewBox="0 0 24 24">
-              <path d="M12 16V4m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" strokeLinecap="round" />
-            </svg>
-            <p>Tap to add screen recording</p>
-            <span className="fmt">MP4 / MOV · PORTRAIT</span>
-          </>
-        )}
-      </div>
+          )}
 
-      <div>
-        <div className="rate-label">Gameplay rating — pick one</div>
-        <div className="rating">
-          {RATING_META.map((r) => (
-            <button
-              key={r.key}
-              type="button"
-              disabled={locked}
-              className={slot.rating === r.key ? r.cls : ''}
-              onClick={() => onRate(r.key)}
-            >
-              <span className={`dot ${r.dot}`} />
-              {r.label}
-            </button>
-          ))}
+          {status === 'error' ? (
+            <>
+              <div className="invalid-msg">{slot.error}</div>
+              <button type="button" className="btn small" onClick={onSubmit}>
+                {slot.errorPhase === 'sheets' ? 'Retry logging' : 'Retry upload'}
+              </button>
+            </>
+          ) : (
+            !done && (
+              <button
+                type="button"
+                className="btn primary small block"
+                disabled={!canSubmit || busy}
+                onClick={onSubmit}
+              >
+                {busy ? 'Uploading…' : status === 'uploaded' ? 'Logging…' : 'Submit slot'}
+              </button>
+            )
+          )}
         </div>
       </div>
-
-      <div className="notes">
-        <textarea
-          placeholder="Gameplay notes — include timestamps for any abnormal activity…"
-          value={slot.notes ?? ''}
-          disabled={locked}
-          onChange={(e) => onNotes(e.target.value)}
-        />
-        {showNotesError ? (
-          <div className="invalid-msg">{notesError}</div>
-        ) : (
-          <div className="hint">
-            <b>Example:</b> 0:25–0:30 — symbol rotation delayed, taking longer than usual.
-          </div>
-        )}
-      </div>
-
-      {status === 'error' ? (
-        <>
-          <div className="invalid-msg">{slot.error}</div>
-          <button type="button" className="btn small" onClick={onRetry}>
-            {slot.errorPhase === 'sheets' ? 'Retry logging' : 'Retry upload'}
-          </button>
-        </>
-      ) : (
-        !done && (
-          <button
-            type="button"
-            className="btn primary small block"
-            disabled={!canSubmit || busy}
-            onClick={onSubmit}
-          >
-            {busy ? 'Uploading…' : status === 'uploaded' ? 'Logging…' : 'Submit slot'}
-          </button>
-        )
-      )}
     </div>
   );
 }

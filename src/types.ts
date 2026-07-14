@@ -19,7 +19,11 @@ export type SlotEntry = {
   brand: BrandConfig;
   videoFile?: File;
   rating?: Rating;
-  notes?: string;
+  // Lag report (required for slight/strong): issue time frame + issue types.
+  lagStart?: string; // mm:ss
+  lagEnd?: string; // mm:ss
+  lagTags?: string[]; // from LAG_PRESETS
+  notes?: string; // free-text extra details
   driveFileId?: string;
   driveLink?: string;
   uploadedName?: string;

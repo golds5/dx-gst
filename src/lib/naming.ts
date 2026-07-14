@@ -111,22 +111,54 @@ export function suggestSessionOfWeek(
   return Math.min(suggested, max) as 1 | 2;
 }
 
-// Notes validation (Section 4.3): if rating is slight/strong, notes must
-// contain at least one m:ss timestamp.
-const TIMESTAMP_RE = /\d{1,2}:\d{2}/;
+// ── Lag report (required when rating is slight/strong) ───────────────
+// The VA logs the issue time frame as mm:ss – mm:ss plus at least one issue
+// type (preset tag) or a free-text note.
 
-export function hasTimestamp(notes: string): boolean {
-  return TIMESTAMP_RE.test(notes);
+const CLOCK_RE = /^\d{1,2}:[0-5]\d$/;
+
+export function isValidClock(value: string): boolean {
+  return CLOCK_RE.test(value);
 }
 
-export const TIMESTAMP_HINT = 'Add at least one timestamp (e.g. 0:25–0:30).';
+export function clockToSeconds(value: string): number {
+  const [mm, ss] = value.split(':').map(Number);
+  return mm * 60 + ss;
+}
 
-export function validateSlotNotes(
-  rating: 'smooth' | 'slight' | 'strong' | undefined,
-  notes: string | undefined,
-): string | null {
-  if (rating === 'slight' || rating === 'strong') {
-    if (!notes || !notes.trim() || !hasTimestamp(notes)) return TIMESTAMP_HINT;
+// Live-format a clock field: keep digits only (max 4) and insert the colon
+// before the last two, so typing "0023" or "23" yields "00:23" / "23".
+export function formatClockInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, -2)}:${digits.slice(-2)}`;
+}
+
+export type LagReport = {
+  start?: string;
+  end?: string;
+  tags?: string[];
+  text?: string;
+};
+
+export function validateLagReport(r: LagReport): string | null {
+  if (!r.start || !r.end || !isValidClock(r.start) || !isValidClock(r.end)) {
+    return 'Log the issue time frame as mm:ss – mm:ss (e.g. 00:23 – 01:20).';
+  }
+  if (clockToSeconds(r.end) < clockToSeconds(r.start)) {
+    return 'The end time must be after the start time.';
+  }
+  if (!r.tags?.length && !r.text?.trim()) {
+    return 'Pick at least one issue type or add a note.';
   }
   return null;
+}
+
+// Compose the cell-note text written to the heatmap, e.g.
+// "00:23 - 01:20 — Animation glitch, Frame rate drop, spins stall on win".
+export function buildLagNotes(r: LagReport): string {
+  const desc = [...(r.tags ?? [])];
+  const extra = r.text?.trim();
+  if (extra) desc.push(extra);
+  return `${r.start} - ${r.end} — ${desc.join(', ')}`;
 }

@@ -1,27 +1,39 @@
+import { useState } from 'react';
 import { DEVICES, GAMES, MARKETS } from '../config';
 import { formatSheetDate, pad2 } from '../lib/naming';
-import type { Rating, Session, SlotEntry } from '../types';
+import type { Session, SlotEntry } from '../types';
 import { SlotCard } from './SlotCard';
 
 type Props = {
   session: Session;
   slots: SlotEntry[];
   onPickFile: (index: number, file: File) => void;
-  onRate: (index: number, rating: Rating) => void;
-  onNotes: (index: number, notes: string) => void;
+  onChange: (index: number, patch: Partial<SlotEntry>) => void;
   onSubmit: (index: number) => void;
   onNewSession: () => void;
 };
+
+// Compact ticket status shown while a brand is collapsed.
+function TicketStatus({ slot }: { slot: SlotEntry }) {
+  if (slot.status === 'logged') return <span className="status-chip ok">LOGGED ✓</span>;
+  if (slot.status === 'error') return <span className="status-chip err">ERROR</span>;
+  if (slot.status === 'uploading') {
+    return <span className="status-chip busy">{slot.progress ?? 0}%</span>;
+  }
+  if (slot.status === 'uploaded') return <span className="status-chip busy">LOGGING</span>;
+  if (slot.videoFile) return <span className="status-chip busy">DRAFT</span>;
+  return <span className="add-chip">+ ADD</span>;
+}
 
 export function SlotGrid({
   session,
   slots,
   onPickFile,
-  onRate,
-  onNotes,
+  onChange,
   onSubmit,
   onNewSession,
 }: Props) {
+  const [expanded, setExpanded] = useState<number | null>(null);
   const marketCfg = MARKETS[session.market];
   const game = GAMES.find(
     (g) => g.provider === session.provider && g.game === session.game,
@@ -80,10 +92,11 @@ export function SlotGrid({
       <div className="callout">
         <span>💡</span>
         <div>
-          <b>How to fill this in:</b> record 30–60s of gameplay per brand on the assigned
-          device, drop the screen recording into the phone slot, pick one gameplay rating,
-          and note any abnormal activity <span className="u">with timestamps</span>. Each
-          slot uploads to Drive and logs to the heatmap when you submit it.
+          <b>How to fill this in:</b> tap a brand ticket to open it, drop the screen
+          recording into the phone slot, and pick one gameplay rating. For Slight or
+          Strong lag, log the <span className="u">issue time frame</span> (mm:ss – mm:ss)
+          and the issue types. Each slot uploads to Drive and logs to the heatmap when
+          you submit it.
         </div>
       </div>
 
@@ -108,18 +121,42 @@ export function SlotGrid({
         </div>
       </div>
 
-      <div className="grid">
-        {slots.map((slot, i) => (
-          <SlotCard
-            key={`${slot.brand.group}-${slot.brand.name}`}
-            slot={slot}
-            onPickFile={(f) => onPickFile(i, f)}
-            onRate={(r) => onRate(i, r)}
-            onNotes={(n) => onNotes(i, n)}
-            onSubmit={() => onSubmit(i)}
-            onRetry={() => onSubmit(i)}
-          />
-        ))}
+      <div className="grid tickets">
+        {slots.map((slot, i) => {
+          const key = `${slot.brand.group}-${slot.brand.name}`;
+          if (expanded === i) {
+            return (
+              <div className="expanded-wrap" key={key}>
+                <SlotCard
+                  slot={slot}
+                  onPickFile={(f) => onPickFile(i, f)}
+                  onChange={(patch) => onChange(i, patch)}
+                  onSubmit={() => onSubmit(i)}
+                  onCollapse={() => setExpanded(null)}
+                />
+              </div>
+            );
+          }
+          return (
+            <button
+              type="button"
+              key={key}
+              className={`ticket${slot.brand.isCompetitor ? '' : ' pinned'}${
+                slot.status === 'logged' ? ' logged' : ''
+              }${slot.status === 'error' ? ' errored' : ''}`}
+              onClick={() => setExpanded(i)}
+              aria-label={`Open ${slot.brand.name}`}
+            >
+              <div>
+                <div className="brand-group">
+                  {slot.brand.isCompetitor ? 'COMPETITOR' : slot.brand.group}
+                </div>
+                <div className="brand-name">{slot.brand.name}</div>
+              </div>
+              <TicketStatus slot={slot} />
+            </button>
+          );
+        })}
       </div>
 
       <div className="summary">
