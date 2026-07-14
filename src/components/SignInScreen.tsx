@@ -25,9 +25,10 @@ export function SignInScreen({ onSignedIn }: Props) {
       <div className="game-icon" style={{ margin: '0 auto 20px' }}>
         🎮
       </div>
-      <h1>Game Speed Check</h1>
+      <h1>DX-GST</h1>
       <div className="sub">
-        Sign in with your S5Tech Google account to upload recordings and log the heatmap.
+        Game Speed Test — sign in with your S5Tech Google account to upload recordings
+        and log the heatmap.
       </div>
       <button type="button" className="btn primary" disabled={busy} onClick={signIn}>
         {busy ? 'Signing in…' : 'Sign in with Google'}

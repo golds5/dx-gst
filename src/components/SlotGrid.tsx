@@ -38,7 +38,7 @@ export function SlotGrid({
         <div>
           <h1>{session.game}</h1>
           <div className="sub">
-            {session.provider} · Weekly gameplay speed check · Session {session.sessionOfWeek}
+            {session.provider} · Weekly gameplay speed test · Session {session.sessionOfWeek}
           </div>
         </div>
         <div className="week-chip">

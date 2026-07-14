@@ -66,7 +66,7 @@ export function SessionSetup({ onStart }: Props) {
       <div className="page-head" style={{ marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22 }}>Session setup</h1>
-          <div className="sub">Weekly gameplay speed check</div>
+          <div className="sub">Weekly gameplay speed test</div>
         </div>
         <div className="week-chip">
           <div className="w">W{pad2(weekNumber)}</div>

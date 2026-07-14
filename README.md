@@ -1,4 +1,4 @@
-# Game Speed Check — S5Tech DX
+# DX-GST — Game Speed Test (S5Tech DX)
 
 Mobile-first web tool for weekly casino-game speed testing. VAs sign in with
 their company Google account, set up a test session, upload one screen

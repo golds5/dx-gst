@@ -189,8 +189,8 @@ export default function App() {
   return (
     <div className="page">
       <div className="breadcrumb">
-        S5TECH <span className="sep">/</span> DX <span className="sep">/</span> WEEKLY GAME
-        SPEED CHECK
+        S5TECH <span className="sep">/</span> DX-GST <span className="sep">/</span> WEEKLY
+        GAME SPEED TEST
         {session && (
           <>
             <span className="sep">/</span>
@@ -226,7 +226,7 @@ export default function App() {
       )}
 
       <footer>
-        <span>DX · GAME SPEED CHECK</span>
+        <span>DX-GST · GAME SPEED TEST</span>
         <span>
           {USE_MOCK_GOOGLE
             ? 'GOOGLE APIS MOCKED — SET IDS IN src/config.ts'
