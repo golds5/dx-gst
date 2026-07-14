@@ -1,32 +1,17 @@
 // ════════════════════════════════════════════════════════════════════
-// Game Speed Check — central config.
-// ALL Google IDs and team lists live here. Fill in the placeholders
-// below after the one-time Google Cloud setup (see README, Section 10
-// of the spec). Nothing else in the codebase hardcodes these.
+// DX-GST (Game Speed Test) — central config.
+// ALL Google IDs and team lists live here; both the browser code and the
+// api/ functions import from this file. Nothing else hardcodes these.
 // ════════════════════════════════════════════════════════════════════
 
 // ─── Google identifiers ─────────────────────────────────────────────
-export const OAUTH_CLIENT_ID =
-  '355903144024-kgkmppj5mgf5q9uh82skm0vjnsmi4opp.apps.googleusercontent.com';
-
+// There is no user sign-in: all Google access goes through a service
+// account whose credentials live in the Vercel env vars GOOGLE_SA_EMAIL
+// and GOOGLE_SA_PRIVATE_KEY (see README). The Drive root folder and the
+// spreadsheet must be shared with the service account as Editor.
 export const SPREADSHEET_ID = '1JNK32r9TCrRCrvNAE3shcFVGbzTFwKU_LtH7RrxNIkE';
 
 export const DRIVE_ROOT_FOLDER_ID = '1REdZ27EKPBG8TxWn_FsHS3UXQzfzMgkq';
-
-// While the client ID is still a placeholder the app runs in mock mode:
-// sign-in, Drive uploads and Sheets writes are simulated in-memory so the
-// whole flow can be tested locally with zero Google setup.
-export const USE_MOCK_GOOGLE = OAUTH_CLIENT_ID.startsWith('YOUR_');
-
-export const OAUTH_SCOPES = [
-  // The spec named drive.file, but that scope can only touch folders the app
-  // itself created — it cannot upload into the manually-created team root
-  // folder. Full drive scope is required for a pre-existing shared folder.
-  'https://www.googleapis.com/auth/drive',
-  'https://www.googleapis.com/auth/spreadsheets',
-  // needed only to display the signed-in email in the header
-  'https://www.googleapis.com/auth/userinfo.email',
-].join(' ');
 
 // ─── Drive folder layout ─────────────────────────────────────────────
 // Videos land in: {root}/Game Speed Check/{YYYY}/W{WW}/{MARKET}/

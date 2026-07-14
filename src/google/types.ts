@@ -3,17 +3,29 @@ import type { BrandConfig } from '../config';
 
 export type UploadStatus = 'uploading' | 'reconnecting';
 
+// Server (or mock) prepares the upload: generates the filename, ensures the
+// Drive folder path, resolves _vN collisions, opens a resumable session.
+export type PrepareUploadArgs = {
+  session: Session;
+  brand: BrandConfig;
+  sourceFileName: string;
+  contentType: string;
+};
+
+export type PreparedUpload = {
+  sessionUri: string; // pre-authorized Google resumable session URI
+  finalName: string; // may carry a _vN suffix
+};
+
 export type UploadArgs = {
   file: File;
-  name: string;
-  folderId: string;
+  prepared: PreparedUpload;
   onProgress: (pct: number) => void;
   onStatus?: (status: UploadStatus) => void;
 };
 
-export type SlotCellArgs = {
+export type LogSlotArgs = {
   session: Session;
-  rowNumber: number; // 1-based sheet row
   brandIndex: number; // index into the market's brand list (→ column E+i)
   brand: BrandConfig;
   rating: Rating;
@@ -21,15 +33,12 @@ export type SlotCellArgs = {
   driveLink: string;
 };
 
-// One interface, two implementations: `real` (Google APIs from the browser)
-// and `mock` (in-memory, used while config.ts still has placeholder IDs).
+// One interface, two implementations: `remote` (Vercel API + direct-to-Google
+// chunk upload) and `mock` (in-memory, used during local `vite dev`).
 export interface GoogleBackend {
-  signIn(): Promise<{ email: string }>;
-  ensureFolderPath(segments: string[]): Promise<string>; // → leaf folder id
-  listFileNames(folderId: string): Promise<string[]>;
+  prepareUpload(args: PrepareUploadArgs): Promise<PreparedUpload>;
   uploadVideo(args: UploadArgs): Promise<{ fileId: string; webViewLink: string }>;
-  findOrCreateSessionRow(session: Session): Promise<number>; // → 1-based row
-  writeSlotCell(args: SlotCellArgs): Promise<void>;
+  logSlot(args: LogSlotArgs): Promise<void>;
   hasSessionThisWeek(session: {
     market: string;
     isoYear: number;

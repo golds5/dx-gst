@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
-import {
-  buildFolderPath,
-  buildVideoFilename,
-  nextAvailableName,
-  pad2,
-} from './lib/naming';
+import { pad2 } from './lib/naming';
 import type { Rating, Session, SlotEntry } from './types';
 import { SessionSetup } from './components/SessionSetup';
-import { SignInScreen } from './components/SignInScreen';
 import { SlotGrid } from './components/SlotGrid';
 
 function errorMessage(err: unknown): string {
@@ -17,7 +11,6 @@ function errorMessage(err: unknown): string {
 }
 
 export default function App() {
-  const [email, setEmail] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [slots, setSlots] = useState<SlotEntry[]>([]);
   const [toast, setToast] = useState<string | null>(null);
@@ -27,7 +20,6 @@ export default function App() {
   slotsRef.current = slots;
   const sessionRef = useRef(session);
   sessionRef.current = session;
-  const sessionRowRef = useRef<number | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,7 +50,6 @@ export default function App() {
 
   function startSession(s: Session) {
     setSession(s);
-    sessionRowRef.current = null;
     setSlots(
       MARKETS[s.market].brands.map((brand) => ({ brand, status: 'empty' as const })),
     );
@@ -73,7 +64,6 @@ export default function App() {
     }
     setSession(null);
     setSlots([]);
-    sessionRowRef.current = null;
   }
 
   // ── Submit pipeline (Section 4.4): sequential per slot ──────────────
@@ -93,39 +83,23 @@ export default function App() {
         errorPhase: undefined,
       });
       try {
-        // a. Ensure the Drive folder path exists.
-        const folderId = await backend.ensureFolderPath(
-          buildFolderPath(
-            currentSession.isoYear,
-            currentSession.weekNumber,
-            currentSession.market,
-          ),
-        );
-        // b. Generate the filename; append _vN if this slot already has a
-        // video this session.
-        const desired = buildVideoFilename({
-          isoYear: currentSession.isoYear,
-          weekNumber: currentSession.weekNumber,
-          market: currentSession.market,
-          sessionOfWeek: currentSession.sessionOfWeek,
-          provider: currentSession.provider,
-          game: currentSession.game,
+        // a+b. Server ensures the folder path, generates the filename
+        // (with _vN if this slot already has a video), opens the session.
+        const prepared = await backend.prepareUpload({
+          session: currentSession,
           brand: slot.brand,
-          deviceId: currentSession.device,
           sourceFileName: slot.videoFile.name,
+          contentType: slot.videoFile.type || 'video/mp4',
         });
-        const existing = await backend.listFileNames(folderId);
-        const name = nextAvailableName(desired, existing);
-        if (name !== desired) {
-          const version = /_v(\d+)\.[^.]+$/.exec(name)?.[1] ?? '2';
+        const version = /_v(\d+)\.[^.]+$/.exec(prepared.finalName)?.[1];
+        if (version) {
           showToast(
             `A video for this slot already exists this session — uploading as v${version}.`,
           );
         }
         const { fileId, webViewLink } = await backend.uploadVideo({
           file: slot.videoFile,
-          name,
-          folderId,
+          prepared,
           onProgress: (pct) => updateSlot(index, { progress: pct, reconnecting: false }),
           onStatus: (status) =>
             updateSlot(index, { reconnecting: status === 'reconnecting' }),
@@ -134,7 +108,7 @@ export default function App() {
           status: 'uploaded',
           driveFileId: fileId,
           driveLink: webViewLink,
-          uploadedName: name,
+          uploadedName: prepared.finalName,
           reconnecting: false,
         });
       } catch (err) {
@@ -153,13 +127,9 @@ export default function App() {
     // c. Write the heatmap cell. The video is already in Drive at this
     // point — a failure here must offer "Retry logging", never re-upload.
     try {
-      if (sessionRowRef.current === null) {
-        sessionRowRef.current = await backend.findOrCreateSessionRow(currentSession);
-      }
       const latest = slotsRef.current[index];
-      await backend.writeSlotCell({
+      await backend.logSlot({
         session: currentSession,
-        rowNumber: sessionRowRef.current,
         brandIndex: index,
         brand: latest.brand,
         rating: latest.rating!,
@@ -201,12 +171,9 @@ export default function App() {
           </>
         )}
         {USE_MOCK_GOOGLE && <span className="mock-chip">MOCK MODE</span>}
-        {email && <span className="who">{email}</span>}
       </div>
 
-      {!email ? (
-        <SignInScreen onSignedIn={setEmail} />
-      ) : !session ? (
+      {!session ? (
         <SessionSetup onStart={startSession} />
       ) : (
         <SlotGrid
@@ -229,8 +196,8 @@ export default function App() {
         <span>DX-GST · GAME SPEED TEST</span>
         <span>
           {USE_MOCK_GOOGLE
-            ? 'GOOGLE APIS MOCKED — SET IDS IN src/config.ts'
-            : 'DRIVE + SHEETS · LIVE'}
+            ? 'LOCAL DEV — GOOGLE APIS MOCKED'
+            : 'TEAM UPLOADER · NO SIGN-IN NEEDED'}
         </span>
       </footer>
 

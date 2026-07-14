@@ -1,14 +1,22 @@
-// In-memory mock of the Google backend. Active while config.ts still has
-// placeholder IDs (USE_MOCK_GOOGLE). Mimics real behavior closely enough to
-// exercise the full flow locally: folder paths, duplicate-name _v2 handling,
-// row find-or-create, per-slot cell updates. State is inspectable at
+// In-memory mock of the backend, used during local `vite dev` (no API routes
+// there). Mimics the real behavior: filename generation, _vN collisions,
+// heatmap row find-or-create, per-slot cell updates. State is inspectable at
 // window.__mockGoogle and every action is logged to the console.
 
 import { MARKETS, RATING_COLORS } from '../config';
-import { formatSheetDate } from '../lib/naming';
-import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from './sheets';
-import type { Session } from '../types';
-import type { GoogleBackend, SlotCellArgs, UploadArgs } from './types';
+import {
+  buildFolderPath,
+  buildVideoFilename,
+  formatSheetDate,
+  nextAvailableName,
+} from '../lib/naming';
+import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from '../lib/labels';
+import type {
+  GoogleBackend,
+  LogSlotArgs,
+  PrepareUploadArgs,
+  UploadArgs,
+} from './types';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -21,8 +29,7 @@ type MockRow = {
 };
 
 const state = {
-  folders: new Map<string, string>(), // path → folder id
-  filesByFolder: new Map<string, string[]>(), // folder id → file names
+  filesByFolder: new Map<string, string[]>(), // folder path → file names
   tabs: new Map<string, MockRow[]>(), // tab title → rows (index 0 = sheet row 2)
   uploadCounter: 0,
 };
@@ -37,78 +44,75 @@ if (typeof window !== 'undefined') window.__mockGoogle = state;
 const log = (...args: unknown[]) => console.log('[mock-google]', ...args);
 
 export const mockBackend: GoogleBackend = {
-  async signIn() {
-    await sleep(400);
-    log('signed in as va.mock@s5tech.co');
-    return { email: 'va.mock@s5tech.co' };
+  async prepareUpload({ session, brand, sourceFileName }: PrepareUploadArgs) {
+    await sleep(250);
+    const folderPath = buildFolderPath(
+      session.isoYear,
+      session.weekNumber,
+      session.market,
+    ).join('/');
+    const existing = state.filesByFolder.get(folderPath) ?? [];
+    state.filesByFolder.set(folderPath, existing);
+    const desired = buildVideoFilename({
+      isoYear: session.isoYear,
+      weekNumber: session.weekNumber,
+      market: session.market,
+      sessionOfWeek: session.sessionOfWeek,
+      provider: session.provider,
+      game: session.game,
+      brand,
+      deviceId: session.device,
+      sourceFileName,
+    });
+    const finalName = nextAvailableName(desired, existing);
+    log(`prepared upload "${finalName}" → ${folderPath}`);
+    return { sessionUri: `mock-session:${folderPath}/${finalName}`, finalName };
   },
 
-  async ensureFolderPath(segments: string[]) {
-    await sleep(150);
-    const path = segments.join('/');
-    let id = state.folders.get(path);
-    if (!id) {
-      id = `mock-folder-${state.folders.size + 1}`;
-      state.folders.set(path, id);
-      state.filesByFolder.set(id, []);
-      log(`created folder path "${path}" → ${id}`);
-    }
-    return id;
-  },
-
-  async listFileNames(folderId: string) {
-    await sleep(80);
-    return [...(state.filesByFolder.get(folderId) ?? [])];
-  },
-
-  async uploadVideo({ file, name, folderId, onProgress }: UploadArgs) {
-    log(`uploading "${name}" (${(file.size / 1e6).toFixed(1)} MB) → ${folderId}`);
-    // Simulate chunked progress.
+  async uploadVideo({ file, prepared, onProgress }: UploadArgs) {
+    log(`uploading "${prepared.finalName}" (${(file.size / 1e6).toFixed(1)} MB)`);
     for (let pct = 0; pct < 100; pct += 7) {
       onProgress(Math.min(pct, 99));
       await sleep(120);
     }
     onProgress(100);
-    state.filesByFolder.get(folderId)?.push(name);
+    const folderPath = prepared.sessionUri.slice('mock-session:'.length).split('/').slice(0, -1).join('/');
+    state.filesByFolder.get(folderPath)?.push(prepared.finalName);
     state.uploadCounter += 1;
     const fileId = `mock-file-${state.uploadCounter}`;
-    log(`uploaded "${name}" → ${fileId}`);
+    log(`uploaded "${prepared.finalName}" → ${fileId}`);
     return {
       fileId,
       webViewLink: `https://drive.google.com/file/d/${fileId}/view (mock)`,
     };
   },
 
-  async findOrCreateSessionRow(session: Session) {
-    await sleep(200);
+  async logSlot({ session, brandIndex, brand, rating, notes, driveLink }: LogSlotArgs) {
+    await sleep(350);
     const tab = MARKETS[session.market].sheetTab;
     const rows = state.tabs.get(tab) ?? [];
     state.tabs.set(tab, rows);
     const date = formatSheetDate(session.testDate);
     const device = deviceLabelFor(session.device);
-    const game = gameSheetLabelFor(session);
-    const found = rows.findIndex(
+    const game = gameSheetLabelFor(session.provider, session.game);
+    let idx = rows.findIndex(
       (r) => r.date === date && r.device === device && r.game === game,
     );
-    if (found !== -1) {
-      log(`reusing existing row ${found + 2} in "${tab}"`);
-      return found + 2;
+    if (idx === -1) {
+      rows.unshift({ week: session.weekNumber, date, device, game, cells: {} });
+      idx = 0;
+      log(`created row 2 in "${tab}": W${session.weekNumber} · ${date} · ${device} · ${game}`);
+    } else {
+      log(`reusing existing row ${idx + 2} in "${tab}"`);
     }
-    rows.unshift({ week: session.weekNumber, date, device, game, cells: {} });
-    log(`created row 2 in "${tab}": W${session.weekNumber} · ${date} · ${device} · ${game}`);
-    return 2;
-  },
-
-  async writeSlotCell({ session, rowNumber, brandIndex, brand, rating, notes, driveLink }: SlotCellArgs) {
-    await sleep(250);
-    const tab = MARKETS[session.market].sheetTab;
-    const row = state.tabs.get(tab)?.[rowNumber - 2];
-    if (!row) throw new Error(`mock: row ${rowNumber} not found in "${tab}"`);
-    const color = JSON.stringify(RATING_COLORS[rating]);
     const note = [notes.trim(), `Video: ${driveLink}`].filter(Boolean).join('\n\n');
-    row.cells[brandIndex] = { label: brandCellLabel(brand), color, note };
+    rows[idx].cells[brandIndex] = {
+      label: brandCellLabel(brand),
+      color: JSON.stringify(RATING_COLORS[rating]),
+      note,
+    };
     log(
-      `wrote cell row ${rowNumber} col ${String.fromCharCode(69 + brandIndex)} ` +
+      `wrote cell row ${idx + 2} col ${String.fromCharCode(69 + brandIndex)} ` +
         `(${brandCellLabel(brand)}) rating=${rating}`,
       { note },
     );

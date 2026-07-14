@@ -1,19 +1,9 @@
-import { USE_MOCK_GOOGLE } from '../config';
-import { interactiveSignIn } from './auth';
-import * as drive from './drive';
-import * as sheets from './sheets';
 import { mockBackend } from './mock';
+import { remoteBackend } from './remote';
 import type { GoogleBackend } from './types';
 
-const realBackend: GoogleBackend = {
-  signIn: interactiveSignIn,
-  ensureFolderPath: drive.ensureFolderPath,
-  listFileNames: drive.listFileNames,
-  uploadVideo: drive.uploadVideo,
-  findOrCreateSessionRow: sheets.findOrCreateSessionRow,
-  writeSlotCell: sheets.writeSlotCell,
-  hasSessionThisWeek: sheets.hasSessionThisWeek,
-};
+// `vite dev` has no /api routes, so local dev always runs the in-memory mock.
+// The deployed app (built by Vercel) talks to the real API functions.
+export const USE_MOCK_GOOGLE = import.meta.env.DEV;
 
-export const backend: GoogleBackend = USE_MOCK_GOOGLE ? mockBackend : realBackend;
-export { USE_MOCK_GOOGLE };
+export const backend: GoogleBackend = USE_MOCK_GOOGLE ? mockBackend : remoteBackend;
