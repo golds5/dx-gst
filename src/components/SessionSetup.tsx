@@ -24,8 +24,6 @@ function storedDevices(): CustomDevice[] {
   }
 }
 
-const STEPS = ['Region', 'Test date', 'Device', 'Game'] as const;
-
 type Props = { onStart: (session: Session) => void };
 
 export function SessionSetup({ onStart }: Props) {
@@ -141,20 +139,11 @@ export function SessionSetup({ onStart }: Props) {
         </div>
       </div>
 
-      <div className="steps">
-        {STEPS.map((label, i) => (
-          <button
-            key={label}
-            type="button"
-            className={`step${i === step ? ' on' : ''}${i < step ? ' done' : ''}`}
-            disabled={i >= step}
-            onClick={() => setStep(i)}
-          >
-            <span className="step-num">{i < step ? '✓' : i + 1}</span>
-            {label}
-          </button>
-        ))}
-      </div>
+      {step > 0 && (
+        <button type="button" className="step-back" onClick={() => setStep(step - 1)}>
+          ← Back
+        </button>
+      )}
 
       {step === 0 && (
         <>

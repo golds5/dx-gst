@@ -94,11 +94,25 @@ export function SlotGrid({
       <div className="callout">
         <span>💡</span>
         <div>
-          <b>How to fill this in:</b> tap a brand ticket to open it, drop the screen
-          recording into the phone slot, and pick one gameplay rating. For Slight or
-          Strong lag, log the <span className="u">issue time frame</span> (mm:ss – mm:ss)
-          and the issue types. Each slot uploads to Drive and logs to the heatmap when
-          you submit it.
+          <b>Log one brand at a time.</b>
+          <ol className="steps-list">
+            <li>
+              <b>Tap</b> a brand to open it.
+            </li>
+            <li>
+              <b>Upload</b> your screen recording into the phone slot.
+            </li>
+            <li>
+              <b>Rate</b> the gameplay: Smooth, Slight, or Strong lag.
+            </li>
+            <li>
+              <b>If it lags,</b> enter the time frame (mm:ss – mm:ss) and tap the issue
+              types.
+            </li>
+            <li>
+              <b>Submit.</b> The video saves to Drive and the heatmap updates.
+            </li>
+          </ol>
         </div>
       </div>
 
