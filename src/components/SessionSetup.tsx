@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DEVICES, GAMES, MARKETS } from '../config';
+import { DEVICES, GAMES, MARKETS, REGION_PASSCODES } from '../config';
 import { formatSheetDate, isoWeekOf, pad2, suggestSessionOfWeek } from '../lib/naming';
 import { backend } from '../google';
 import type { Session } from '../types';
@@ -9,25 +9,50 @@ function todayLocalISO(): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
+// Remembered per browser so weekly use is friction-free.
+const passKey = (market: string) => `dxgst.pass.${market}`;
+const DEVICES_KEY = 'dxgst.devices';
+const LAST_DEVICE_KEY = 'dxgst.lastDevice';
+
+type CustomDevice = { label: string; spec?: string };
+
+function storedDevices(): CustomDevice[] {
+  try {
+    return JSON.parse(localStorage.getItem(DEVICES_KEY) ?? '[]') as CustomDevice[];
+  } catch {
+    return [];
+  }
+}
+
+const STEPS = ['Region', 'Test date', 'Device', 'Game'] as const;
+
 type Props = { onStart: (session: Session) => void };
 
 export function SessionSetup({ onStart }: Props) {
-  const [market, setMarket] = useState('TH');
+  const [step, setStep] = useState(0);
+  const [market, setMarket] = useState<string | null>(null);
+  const [passInput, setPassInput] = useState('');
+  const [passError, setPassError] = useState(false);
   const [testDate, setTestDate] = useState(todayLocalISO());
-  const [device, setDevice] = useState(DEVICES[0].id);
+  const [device, setDevice] = useState(
+    () => localStorage.getItem(LAST_DEVICE_KEY) ?? '',
+  );
+  const [customDevices, setCustomDevices] = useState<CustomDevice[]>(storedDevices);
+  const [addingDevice, setAddingDevice] = useState(false);
+  const [newDeviceName, setNewDeviceName] = useState('');
+  const [newDeviceSpec, setNewDeviceSpec] = useState('');
   const [gameIdx, setGameIdx] = useState(0);
   const [sessionOfWeek, setSessionOfWeek] = useState<1 | 2>(1);
   const [autoSuggested, setAutoSuggested] = useState(false);
 
-  const marketCfg = MARKETS[market];
+  const marketCfg = market ? MARKETS[market] : null;
   const { isoYear, weekNumber } = isoWeekOf(testDate);
 
-  // Auto-suggest session of week for TH: each distinct test DAY this week is
-  // one session (day 1 e.g. Wednesday → 1, day 2 e.g. Friday → 2; re-opening
-  // an already-logged day keeps its number). Single-session markets: always 1.
+  // Session-of-week auto-suggest: each distinct test day this week is one
+  // session (re-opening an already-logged day keeps its number).
   useEffect(() => {
     let cancelled = false;
-    if (marketCfg.sessionsPerWeek === 1) {
+    if (!market || !marketCfg || marketCfg.sessionsPerWeek === 1) {
       setSessionOfWeek(1);
       setAutoSuggested(false);
       return;
@@ -46,9 +71,45 @@ export function SessionSetup({ onStart }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [market, isoYear, weekNumber, testDate, marketCfg.sessionsPerWeek]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [market, weekNumber, testDate]);
+
+  function pickRegion(code: string) {
+    setMarket(code);
+    setPassInput('');
+    setPassError(false);
+    if (localStorage.getItem(passKey(code)) === REGION_PASSCODES[code]) {
+      setStep(1); // already unlocked on this device
+    }
+  }
+
+  function submitPasscode() {
+    if (!market) return;
+    if (passInput.trim() === REGION_PASSCODES[market]) {
+      localStorage.setItem(passKey(market), passInput.trim());
+      setPassError(false);
+      setStep(1);
+    } else {
+      setPassError(true);
+    }
+  }
+
+  function saveNewDevice() {
+    const label = newDeviceName.trim();
+    if (!label) return;
+    const entry: CustomDevice = { label, spec: newDeviceSpec.trim() || undefined };
+    const next = [...customDevices.filter((d) => d.label !== label), entry];
+    setCustomDevices(next);
+    localStorage.setItem(DEVICES_KEY, JSON.stringify(next));
+    setDevice(label);
+    setAddingDevice(false);
+    setNewDeviceName('');
+    setNewDeviceSpec('');
+  }
 
   function start() {
+    if (!market) return;
+    localStorage.setItem(LAST_DEVICE_KEY, device);
     const game = GAMES[gameIdx];
     onStart({
       market,
@@ -62,9 +123,14 @@ export function SessionSetup({ onStart }: Props) {
     });
   }
 
+  const deviceOptions: CustomDevice[] = [
+    ...DEVICES.map((d) => ({ label: d.label, spec: d.spec })),
+    ...customDevices.filter((c) => !DEVICES.some((d) => d.label === c.label)),
+  ];
+
   return (
     <div className="setup-panel">
-      <div className="page-head" style={{ marginBottom: 24 }}>
+      <div className="page-head" style={{ marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 22 }}>Session setup</h1>
           <div className="sub">Weekly gameplay speed test</div>
@@ -75,88 +141,207 @@ export function SessionSetup({ onStart }: Props) {
         </div>
       </div>
 
-      <div className="field">
-        <label className="field-label" htmlFor="market">Market</label>
-        <select id="market" value={market} onChange={(e) => setMarket(e.target.value)}>
-          {Object.values(MARKETS).map((m) => (
-            <option key={m.code} value={m.code}>
-              {m.flag} {m.code} · {m.label}
-            </option>
-          ))}
-        </select>
+      <div className="steps">
+        {STEPS.map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            className={`step${i === step ? ' on' : ''}${i < step ? ' done' : ''}`}
+            disabled={i >= step}
+            onClick={() => setStep(i)}
+          >
+            <span className="step-num">{i < step ? '✓' : i + 1}</span>
+            {label}
+          </button>
+        ))}
       </div>
 
-      <div className="field">
-        <label className="field-label" htmlFor="date">Test date</label>
-        <input
-          id="date"
-          type="date"
-          value={testDate}
-          onChange={(e) => e.target.value && setTestDate(e.target.value)}
-        />
-      </div>
-
-      <div className="field">
-        <span className="field-label">Test device</span>
-        <div className="tag-row">
-          {DEVICES.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              className={`tag${device === d.id ? ' active' : ''}`}
-              onClick={() => setDevice(d.id)}
-            >
-              {device === d.id && '✓ '}
-              {d.label} <span className="spec">{d.spec}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="field">
-        <label className="field-label" htmlFor="game">Provider · Game</label>
-        <select
-          id="game"
-          value={gameIdx}
-          onChange={(e) => setGameIdx(Number(e.target.value))}
-        >
-          {GAMES.map((g, i) => (
-            <option key={`${g.provider}-${g.game}`} value={i}>
-              {g.icon} {g.provider} — {g.game}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {marketCfg.sessionsPerWeek === 2 && (
-        <div className="field">
-          <span className="field-label">Session of week</span>
-          <div className="seg">
-            {([1, 2] as const).map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={sessionOfWeek === n ? 'on' : ''}
-                onClick={() => {
-                  setSessionOfWeek(n);
-                  setAutoSuggested(false);
-                }}
-              >
-                Session {n}
-              </button>
-            ))}
+      {step === 0 && (
+        <>
+          <div className="field">
+            <span className="field-label">Region</span>
+            <div className="region-grid">
+              {Object.values(MARKETS).map((m) => (
+                <button
+                  key={m.code}
+                  type="button"
+                  className={`region-card${market === m.code ? ' on' : ''}`}
+                  onClick={() => pickRegion(m.code)}
+                >
+                  <span className="region-flag">{m.flag}</span>
+                  <span className="region-code">{m.code}</span>
+                  <span className="region-name">{m.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          {autoSuggested && (
-            <div className="auto-note">
-              Auto-suggested from this week&apos;s test days — tap to override.
+          {market && (
+            <div className="field">
+              <label className="field-label" htmlFor="passcode">
+                Passcode for {market}
+              </label>
+              <div className="pass-row">
+                <input
+                  id="passcode"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="••••"
+                  value={passInput}
+                  onChange={(e) => {
+                    setPassInput(e.target.value);
+                    setPassError(false);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && submitPasscode()}
+                />
+                <button type="button" className="btn primary" onClick={submitPasscode}>
+                  Unlock
+                </button>
+              </div>
+              {passError && (
+                <div className="invalid-msg">Wrong passcode for {market} — try again.</div>
+              )}
+              <div className="auto-note">
+                Ask your DX lead for the region passcode. This device remembers it.
+              </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
-      <button type="button" className="btn primary block" onClick={start}>
-        Start session → {marketCfg.brands.length} brand slots
-      </button>
+      {step === 1 && marketCfg && (
+        <>
+          <div className="field">
+            <label className="field-label" htmlFor="date">
+              Test date · {marketCfg.flag} {marketCfg.code} tests{' '}
+              {marketCfg.sessionsPerWeek === 2 ? 'twice' : 'once'} a week
+            </label>
+            <input
+              id="date"
+              type="date"
+              value={testDate}
+              onChange={(e) => e.target.value && setTestDate(e.target.value)}
+            />
+          </div>
+          {marketCfg.sessionsPerWeek === 2 && (
+            <div className="field">
+              <span className="field-label">Test day of this week</span>
+              <div className="seg">
+                {([1, 2] as const).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={sessionOfWeek === n ? 'on' : ''}
+                    onClick={() => {
+                      setSessionOfWeek(n);
+                      setAutoSuggested(false);
+                    }}
+                  >
+                    Day {n}
+                  </button>
+                ))}
+              </div>
+              {autoSuggested && (
+                <div className="auto-note">
+                  Auto-suggested from this week&apos;s logged test days — tap to override.
+                </div>
+              )}
+            </div>
+          )}
+          <button type="button" className="btn primary block" onClick={() => setStep(2)}>
+            Continue
+          </button>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <div className="field">
+            <span className="field-label">Your test device</span>
+            <div className="tag-row">
+              {deviceOptions.map((d) => (
+                <button
+                  key={d.label}
+                  type="button"
+                  className={`tag${device === d.label ? ' active' : ''}`}
+                  onClick={() => setDevice(d.label)}
+                >
+                  {device === d.label && '✓ '}
+                  {d.label}
+                  {d.spec && <span className="spec">{d.spec}</span>}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="tag"
+                onClick={() => setAddingDevice((v) => !v)}
+              >
+                ＋ Add my device
+              </button>
+            </div>
+          </div>
+          {addingDevice && (
+            <div className="field add-device">
+              <input
+                type="text"
+                placeholder="Device name — e.g. iPhone 13"
+                value={newDeviceName}
+                onChange={(e) => setNewDeviceName(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Specs (optional) — e.g. 2021 · 4G RAM"
+                value={newDeviceSpec}
+                onChange={(e) => setNewDeviceSpec(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn small"
+                disabled={!newDeviceName.trim()}
+                onClick={saveNewDevice}
+              >
+                Save device
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            className="btn primary block"
+            disabled={!device}
+            onClick={() => setStep(3)}
+          >
+            Continue
+          </button>
+        </>
+      )}
+
+      {step === 3 && marketCfg && (
+        <>
+          <div className="field">
+            <label className="field-label" htmlFor="game">
+              Game under test · usually 2 games per test day
+            </label>
+            <select
+              id="game"
+              value={gameIdx}
+              onChange={(e) => setGameIdx(Number(e.target.value))}
+            >
+              {GAMES.map((g, i) => (
+                <option key={`${g.provider}-${g.game}`} value={i}>
+                  {g.icon} {g.provider} — {g.game}
+                </option>
+              ))}
+            </select>
+            <div className="auto-note">
+              Finish this game&apos;s brands first, then start a new session for game 2 —
+              it gets its own heatmap row.
+            </div>
+          </div>
+          <button type="button" className="btn primary block" onClick={start}>
+            Start session → {marketCfg.brands.length} brand slots
+          </button>
+        </>
+      )}
     </div>
   );
 }

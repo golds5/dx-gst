@@ -348,6 +348,61 @@ a.drive:hover{border-bottom-style:solid}
   padding:28px;box-shadow:var(--shadow-sm);
 }
 
+/* ── setup wizard steps ──────────────────────────────── */
+.steps{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap}
+.steps .step{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:7px 4px;border-radius:7px;
+  background:var(--panel-2);border:1px solid var(--line-soft);color:var(--faint);
+  font-family:inherit;font-size:11.5px;font-weight:500;cursor:default;
+  transition:all .2s ease;white-space:nowrap;
+}
+.steps .step.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
+.steps .step.done{color:var(--green);cursor:pointer;border-color:rgba(52,199,36,.35)}
+.step-num{
+  width:16px;height:16px;border-radius:50%;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--line-soft);color:var(--muted);font-size:10px;font-weight:600;
+}
+.steps .step.on .step-num{background:var(--primary);color:#fff}
+.steps .step.done .step-num{background:var(--green-bright);color:#fff}
+
+/* ── region picker + passcode ────────────────────────── */
+.region-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.region-card{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:16px 10px;border-radius:10px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;box-shadow:var(--shadow-sm);
+  transition:all .2s ease;
+}
+.region-card:hover{border-color:var(--primary-border);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.region-card.on{background:var(--primary-soft);border-color:var(--primary)}
+.region-flag{font-size:26px;line-height:1.2}
+.region-code{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600}
+.region-card.on .region-code{color:var(--primary)}
+.region-name{font-size:11px;color:var(--muted)}
+.pass-row{display:flex;gap:8px}
+.pass-row input{
+  flex:1;padding:9px 12px;border-radius:7px;
+  background:var(--panel);border:1px solid var(--line);color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:.35em;text-align:center;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+.pass-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+
+/* ── add-your-device form ────────────────────────────── */
+.add-device{
+  display:flex;flex-direction:column;gap:8px;
+  background:var(--panel-2);border:1px solid var(--line-soft);border-radius:10px;padding:12px;
+}
+.add-device input{
+  padding:8px 11px;border-radius:7px;
+  background:var(--panel);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;font-size:13px;
+}
+.add-device input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+
 /* ── summary bar ─────────────────────────────────────── */
 .summary{
   position:sticky;bottom:12px;margin-top:32px;

@@ -125,6 +125,18 @@ export const GAMES: GameConfig[] = [
   // TODO: extend with the full weekly rotation of provider/game pairs.
 ];
 
+// ─── Region passcodes ────────────────────────────────────────────────
+// Soft gate: a tester must enter the region's code before opening a session
+// for it (the browser then remembers it). NOTE: these ship in the app bundle,
+// so treat this as team-level friction, not real security.
+// TODO: change these before rollout.
+export const REGION_PASSCODES: Record<string, string> = {
+  TH: '1111',
+  PH: '2222',
+  MX: '3333',
+  BD: '4444',
+};
+
 // ─── Lag report presets ──────────────────────────────────────────────
 // Quick-pick issue types shown when rating is Slight or Strong lag.
 export const LAG_PRESETS = [

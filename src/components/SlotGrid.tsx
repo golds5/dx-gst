@@ -38,7 +38,8 @@ export function SlotGrid({
   const game = GAMES.find(
     (g) => g.provider === session.provider && g.game === session.game,
   );
-  const device = DEVICES.find((d) => d.id === session.device);
+  // session.device is the tester-reported device label; spec shown when known.
+  const deviceSpec = DEVICES.find((d) => d.label === session.device)?.spec;
   const pinnedCount = slots.filter((s) => !s.brand.isCompetitor).length;
   const loggedCount = slots.filter((s) => s.status === 'logged').length;
   const errorSlots = slots.filter((s) => s.status === 'error');
@@ -75,7 +76,8 @@ export function SlotGrid({
           <div className="prop-label">Device</div>
           <div className="prop-value">
             <span className="tag active">
-              ✓ {device?.label ?? session.device} <span className="spec">{device?.spec}</span>
+              ✓ {session.device}
+              {deviceSpec && <span className="spec">{deviceSpec}</span>}
             </span>
           </div>
         </div>
