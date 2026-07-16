@@ -65,9 +65,12 @@ export const MARKETS: Record<string, MarketConfig> = {
     sessionsPerWeek: 1,
     sheetTab: 'PH - Heatmap',
     brands: [
-      { group: 'GRP1', name: 'BRAND1', isCompetitor: false },
-      { group: 'GRP2', name: 'BRAND2', isCompetitor: false },
-      { group: 'CMP', name: 'COMPETITOR1', isCompetitor: true },
+      { group: 'PHKZ1', name: 'PHWOW', isCompetitor: false },
+      { group: 'PHKZ2', name: 'PHWINWIN', isCompetitor: false },
+      { group: 'PHBLG1', name: 'MRJILI', isCompetitor: false },
+      { group: 'PH96G1', name: 'WINMAYA', isCompetitor: false },
+      { group: 'CMP', name: 'LODIBET', isCompetitor: true },
+      { group: 'CMP', name: 'BOSSPHP.VIP', isCompetitor: true },
     ],
   },
   MX: {
@@ -76,10 +79,10 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇲🇽',
     sessionsPerWeek: 1,
     sheetTab: 'MX - Heatmap',
+    // MX checks one brand per group only.
     brands: [
-      { group: 'GRP1', name: 'BRAND1', isCompetitor: false },
-      { group: 'GRP2', name: 'BRAND2', isCompetitor: false },
-      { group: 'CMP', name: 'COMPETITOR1', isCompetitor: true },
+      { group: 'MXKZG1', name: 'MXWOW', isCompetitor: false },
+      { group: 'MX96G1', name: 'VAROMX', isCompetitor: false },
     ],
   },
   BD: {
@@ -88,10 +91,10 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇧🇩',
     sessionsPerWeek: 1,
     sheetTab: 'BD - Heatmap',
+    // BD checks one brand per group only.
     brands: [
-      { group: 'GRP1', name: 'BRAND1', isCompetitor: false },
-      { group: 'GRP2', name: 'BRAND2', isCompetitor: false },
-      { group: 'CMP', name: 'COMPETITOR1', isCompetitor: true },
+      { group: 'BDKZ1', name: 'ADDA7', isCompetitor: false },
+      { group: 'BD96G1', name: 'GOLDBD', isCompetitor: false },
     ],
   },
 };
