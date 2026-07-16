@@ -13,10 +13,18 @@ import {
 import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from '../lib/labels';
 import type {
   GoogleBackend,
+  HeatmapData,
   LogSlotArgs,
   PrepareUploadArgs,
   UploadArgs,
 } from './types';
+
+// {red,green,blue} 0–1 → css rgb() for the admin viewer.
+function toCss(colorJson: string): string {
+  const c = JSON.parse(colorJson) as { red: number; green: number; blue: number };
+  const to255 = (v: number) => Math.round((v ?? 0) * 255);
+  return `rgb(${to255(c.red)}, ${to255(c.green)}, ${to255(c.blue)})`;
+}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -128,5 +136,33 @@ export const mockBackend: GoogleBackend = {
     await sleep(100);
     const rows = state.tabs.get(MARKETS[market].sheetTab) ?? [];
     return rows.filter((r) => r.week === weekNumber).map((r) => r.date);
+  },
+
+  async fetchHeatmap(market: string): Promise<HeatmapData> {
+    await sleep(250);
+    const cfg = MARKETS[market];
+    const rows = state.tabs.get(cfg.sheetTab) ?? [];
+    const headers = ['Week', 'Date', 'Device', 'Game', ...cfg.brands.map(brandCellLabel)];
+    return {
+      title: cfg.sheetTab,
+      headers,
+      rows: rows.map((r) => {
+        const cells: HeatmapData['rows'][number] = [
+          { value: String(r.week), color: null, note: null },
+          { value: r.date, color: null, note: null },
+          { value: r.device, color: null, note: null },
+          { value: r.game, color: null, note: null },
+        ];
+        cfg.brands.forEach((b, i) => {
+          const c = r.cells[i];
+          cells.push({
+            value: c?.label ?? brandCellLabel(b),
+            color: c ? toCss(c.color) : null,
+            note: c?.note ?? null,
+          });
+        });
+        return cells;
+      }),
+    };
   },
 };

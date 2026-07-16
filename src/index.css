@@ -419,9 +419,60 @@ a.drive:hover{border-bottom-style:solid}
 
 footer{
   margin-top:48px;padding-top:20px;border-top:1px solid var(--line-soft);
-  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);
 }
+.admin-link{
+  background:none;border:none;cursor:pointer;padding:0;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--primary);
+  transition:color .2s ease;
+}
+.admin-link:hover{color:var(--primary-hover);text-decoration:underline}
+
+/* ── admin heatmap viewer ────────────────────────────── */
+.admin-tabs{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
+.admin-tab{
+  padding:7px 16px;border-radius:8px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-family:inherit;font-size:13px;font-weight:600;
+  transition:all .2s ease;
+}
+.admin-tab:hover{border-color:var(--primary-border)}
+.admin-tab.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
+.admin-status{color:var(--muted);font-size:13px;padding:24px 0}
+
+.heatmap-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table.heatmap{border-collapse:collapse;width:100%;font-size:12.5px}
+table.heatmap th{
+  position:sticky;top:0;
+  background:var(--panel-2);color:var(--muted);font-weight:600;text-align:left;
+  padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
+  font-size:11px;letter-spacing:.02em;
+}
+table.heatmap td{
+  padding:9px 12px;border-bottom:1px solid var(--line-soft);
+  border-right:1px solid var(--line-soft);white-space:nowrap;position:relative;
+}
+table.heatmap td.meta-cell{font-family:'JetBrains Mono',monospace;color:var(--text)}
+table.heatmap td.brand-cell{color:#1F2329;font-weight:500}
+table.heatmap td.has-note{cursor:pointer}
+table.heatmap td.has-note:hover{outline:2px solid var(--primary);outline-offset:-2px}
+.note-dot{
+  position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;
+  background:var(--primary);box-shadow:0 0 0 2px rgba(255,255,255,.7);
+}
+
+.note-modal-backdrop{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(31,35,41,.35);backdrop-filter:blur(2px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.note-modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:18px;max-width:420px;width:100%;box-shadow:var(--shadow-md);
+}
+.note-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.note-body{font-size:13.5px;color:var(--text);display:flex;flex-direction:column;gap:12px}
 
 @media(max-width:720px){
   .page{padding:24px 16px 60px}

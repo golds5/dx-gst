@@ -34,6 +34,18 @@ export type LogSlotArgs = {
   driveLink: string;
 };
 
+// Read-only heatmap view for the admin screen.
+export type HeatmapCell = {
+  value: string;
+  color: string | null; // css rgb() of the cell fill, or null when unfilled
+  note: string | null; // VA notes + Drive link
+};
+export type HeatmapData = {
+  title: string; // sheet tab title, e.g. 'TH - Heatmap'
+  headers: string[]; // row 1
+  rows: HeatmapCell[][]; // data rows (row 2 onward)
+};
+
 // One interface, two implementations: `remote` (Vercel API + direct-to-Google
 // chunk upload) and `mock` (in-memory, used during local `vite dev`).
 export interface GoogleBackend {
@@ -42,4 +54,6 @@ export interface GoogleBackend {
   logSlot(args: LogSlotArgs): Promise<void>;
   // Column-B dates already logged this ISO week (for session-day suggest).
   weekDates(session: { market: string; weekNumber: number }): Promise<string[]>;
+  // Full heatmap tab for the admin viewer.
+  fetchHeatmap(market: string): Promise<HeatmapData>;
 }

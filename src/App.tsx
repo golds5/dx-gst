@@ -3,6 +3,7 @@ import { MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
 import { buildLagNotes, pad2 } from './lib/naming';
 import type { Session, SlotEntry } from './types';
+import { AdminScreen } from './components/AdminScreen';
 import { SessionSetup } from './components/SessionSetup';
 import { SlotGrid } from './components/SlotGrid';
 
@@ -14,6 +15,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [slots, setSlots] = useState<SlotEntry[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [adminView, setAdminView] = useState(false);
 
   // Refs so the sequential submit queue always sees current state.
   const slotsRef = useRef(slots);
@@ -184,7 +186,9 @@ export default function App() {
         {USE_MOCK_GOOGLE && <span className="mock-chip">MOCK MODE</span>}
       </div>
 
-      {!session ? (
+      {adminView ? (
+        <AdminScreen onExit={() => setAdminView(false)} />
+      ) : !session ? (
         <SessionSetup onStart={startSession} />
       ) : (
         <SlotGrid
@@ -215,6 +219,11 @@ export default function App() {
 
       <footer>
         <span>DX-GST · GAME SPEED TEST</span>
+        {!adminView && !session && (
+          <button type="button" className="admin-link" onClick={() => setAdminView(true)}>
+            Admin · view heatmap →
+          </button>
+        )}
         <span>
           {USE_MOCK_GOOGLE
             ? 'LOCAL DEV — GOOGLE APIS MOCKED'

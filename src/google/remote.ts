@@ -6,6 +6,7 @@
 import { UPLOAD_CHUNK_BYTES, UPLOAD_CHUNK_RETRIES } from '../config';
 import type {
   GoogleBackend,
+  HeatmapData,
   LogSlotArgs,
   PreparedUpload,
   PrepareUploadArgs,
@@ -134,5 +135,10 @@ export const remoteBackend: GoogleBackend = {
     } catch {
       return []; // auto-suggest is a nicety — never block setup on it
     }
+  },
+
+  async fetchHeatmap(market: string): Promise<HeatmapData> {
+    const resp = await callApi(`/api/heatmap?market=${encodeURIComponent(market)}`);
+    return (await resp.json()) as HeatmapData;
   },
 };

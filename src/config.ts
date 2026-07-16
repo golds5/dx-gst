@@ -125,6 +125,12 @@ export const GAMES: GameConfig[] = [
   // TODO: extend with the full weekly rotation of provider/game pairs.
 ];
 
+// ─── Admin passcode ──────────────────────────────────────────────────
+// Gate for the read-only heatmap viewer. Client-side soft gate (ships in
+// the bundle) — treat as team friction, not real security.
+// TODO: change before rollout.
+export const ADMIN_PASSCODE = '1212';
+
 // ─── Region passcodes ────────────────────────────────────────────────
 // Soft gate: a tester must enter the region's code before opening a session
 // for it (the browser then remembers it). NOTE: these ship in the app bundle,
