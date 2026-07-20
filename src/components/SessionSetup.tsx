@@ -205,6 +205,25 @@ export function SessionSetup({ onStart }: Props) {
               </div>
             </div>
           )}
+
+          <details className="howto">
+            <summary>❓ How it works (5 steps)</summary>
+            <ol>
+              <li>Tap your region → enter the passcode.</li>
+              <li>Pick the test date and your device (add it once if new).</li>
+              <li>
+                Pick the provider and the game you were asked to test.{' '}
+                <b>Set the game&apos;s minimum bet</b> (shown on screen) before recording.
+              </li>
+              <li>
+                For each brand: record 30–60s, upload the video, pick a rating
+                (🟢/🟡/🔴). For lag, add the time frame (mm:ss–mm:ss) + issue type.
+              </li>
+              <li>
+                Submit each brand. When all show <b>LOGGED ✓</b>, reply ✅ in Lark.
+              </li>
+            </ol>
+          </details>
         </>
       )}
 
