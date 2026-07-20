@@ -31,24 +31,25 @@ function storedDevices(): CustomDevice[] {
   }
 }
 
-type Props = { onStart: (session: Session) => void };
+type Props = { onStart: (session: Session) => void; initial?: Session | null };
 
-export function SessionSetup({ onStart }: Props) {
-  const [step, setStep] = useState(0);
-  const [market, setMarket] = useState<string | null>(null);
+export function SessionSetup({ onStart, initial }: Props) {
+  // Resuming from "Change game": region/date/device stay, jump to the game step.
+  const [step, setStep] = useState(initial ? 3 : 0);
+  const [market, setMarket] = useState<string | null>(initial?.market ?? null);
   const [passInput, setPassInput] = useState('');
   const [passError, setPassError] = useState(false);
-  const [testDate, setTestDate] = useState(todayLocalISO());
+  const [testDate, setTestDate] = useState(initial?.testDate ?? todayLocalISO());
   const [device, setDevice] = useState(
-    () => localStorage.getItem(LAST_DEVICE_KEY) ?? '',
+    () => initial?.device ?? localStorage.getItem(LAST_DEVICE_KEY) ?? '',
   );
   const [customDevices, setCustomDevices] = useState<CustomDevice[]>(storedDevices);
   const [addingDevice, setAddingDevice] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceSpec, setNewDeviceSpec] = useState('');
-  const [provider, setProvider] = useState<string | null>(null);
-  const [gameName, setGameName] = useState<string | null>(null);
-  const [sessionOfWeek, setSessionOfWeek] = useState<1 | 2>(1);
+  const [provider, setProvider] = useState<string | null>(initial?.provider ?? null);
+  const [gameName, setGameName] = useState<string | null>(initial?.game ?? null);
+  const [sessionOfWeek, setSessionOfWeek] = useState<1 | 2>(initial?.sessionOfWeek ?? 1);
   const [autoSuggested, setAutoSuggested] = useState(false);
 
   const marketCfg = market ? MARKETS[market] : null;

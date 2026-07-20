@@ -88,8 +88,6 @@ export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: P
           <span className="status-chip err">ERROR</span>
         ) : busy ? (
           <span className="status-chip busy">UPLOADING</span>
-        ) : !brand.isCompetitor ? (
-          <span className="pin">PINNED</span>
         ) : null}
         <button
           type="button"

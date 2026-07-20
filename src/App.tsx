@@ -16,6 +16,8 @@ export default function App() {
   const [slots, setSlots] = useState<SlotEntry[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [adminView, setAdminView] = useState(false);
+  // When set, SessionSetup resumes at the game step with these prefilled.
+  const [resume, setResume] = useState<Session | null>(null);
 
   // Refs so the sequential submit queue always sees current state.
   const slotsRef = useRef(slots);
@@ -52,6 +54,7 @@ export default function App() {
   }, []);
 
   function startSession(s: Session) {
+    setResume(null);
     setSession(s);
     setSlots(
       MARKETS[s.market].brands.map((brand) => ({ brand, status: 'empty' as const })),
@@ -66,6 +69,9 @@ export default function App() {
     if (dirty && !window.confirm('Some slots are not logged yet. Leave this session?')) {
       return;
     }
+    // Resume setup at the game step, keeping region/date/device (the VA is
+    // usually just switching to the next game of the same test session).
+    setResume(sessionRef.current);
     setSession(null);
     setSlots([]);
   }
@@ -190,7 +196,7 @@ export default function App() {
       {adminView ? (
         <AdminScreen onExit={() => setAdminView(false)} />
       ) : !session ? (
-        <SessionSetup onStart={startSession} />
+        <SessionSetup onStart={startSession} initial={resume} />
       ) : (
         <SlotGrid
           session={session}
