@@ -1,28 +1,35 @@
-/* Lark-style design language: bright, clean, blue-accented. */
+/* DX-GST — "diagnostic instrument" for weekly game-speed testing.
+   Ink + one electric-indigo accent; green/amber/red are the SPEED SIGNAL only.
+   Archivo = instrument display/labels · Inter = body · JetBrains Mono = telemetry. */
 :root{
-  --bg:#F2F3F5;
+  --bg:#F4F5F9;
   --panel:#FFFFFF;
-  --panel-2:#F7F8FA;
-  --line:#DEE0E3;
-  --line-soft:#E5E6EB;
-  --text:#1F2329;
-  --muted:#646A73;
-  --faint:#8F959E;
-  --primary:#3370FF;
-  --primary-hover:#2B5FD9;
-  --primary-soft:#F0F4FF;
-  --primary-border:rgba(51,112,255,.35);
-  --green:#2EA121;
-  --green-bright:#34C724;
-  --green-soft:#E8FFEA;
-  --amber:#DE7802;
-  --amber-bright:#FF8800;
-  --amber-soft:#FFF3E5;
-  --red:#F54A45;
-  --red-soft:#FEEBEA;
-  --radius:10px;
-  --shadow-sm:0 1px 2px rgba(31,35,41,.06), 0 0 1px rgba(31,35,41,.08);
-  --shadow-md:0 4px 16px rgba(31,35,41,.10);
+  --panel-2:#EEF0F7;
+  --line:#DCDFEC;
+  --line-soft:#E7E9F2;
+  --text:#16181F;
+  --muted:#5B6072;
+  --faint:#9AA0B2;
+  /* accent (brand) */
+  --primary:#3E2FE0;
+  --primary-hover:#3223C4;
+  --primary-soft:#ECEAFC;
+  --primary-border:rgba(62,47,224,.32);
+  /* speed signal — reserved, never decorative */
+  --green:#0E9F63;
+  --green-bright:#12B76A;
+  --green-soft:#E3F8EF;
+  --amber:#B76A00;
+  --amber-bright:#F59E0B;
+  --amber-soft:#FDF3E2;
+  --red:#D63A30;
+  --red-bright:#F04438;
+  --red-soft:#FDECEA;
+  --radius:12px;
+  --font-display:'Archivo','Inter',system-ui,sans-serif;
+  --shadow-sm:0 1px 2px rgba(22,24,31,.05), 0 0 1px rgba(22,24,31,.08);
+  --shadow-md:0 6px 22px rgba(22,24,31,.10);
+  --shadow-led:0 0 0 3px rgba(62,47,224,.14);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -35,6 +42,18 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 ::selection{background:var(--primary-soft);color:var(--primary)}
+
+/* ── design refresh: instrument type system ──────────── */
+h1,.brand-name,.section-head h2,.region-code,.signin-panel h1{
+  font-family:var(--font-display);letter-spacing:-.01em;
+}
+.week-chip .w{font-family:var(--font-display);font-weight:800}
+/* Eyebrows read like instrument panel labels: tracked uppercase mono. */
+.field-label,.rate-label,.prop-label{
+  text-transform:uppercase;letter-spacing:.10em;font-size:10.5px;font-weight:600;
+  font-family:'JetBrains Mono',monospace;color:var(--muted);
+}
+.section-head h2{text-transform:uppercase;letter-spacing:.06em;font-size:13px}
 
 /* Mobile-focused: the whole app is a single phone-width column, centered.
    No desktop multi-column layout — one design that reads well on phones. */
@@ -57,7 +76,7 @@ body{
 .page-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:8px}
 .game-icon{
   width:52px;height:52px;border-radius:12px;flex-shrink:0;
-  background:linear-gradient(135deg,#EAF2FF,#D8E6FF);
+  background:linear-gradient(135deg,#ECEAFC,#DCD7FA);
   border:1px solid var(--primary-border);
   display:flex;align-items:center;justify-content:center;
   font-size:30px;
@@ -97,7 +116,7 @@ h1{
 }
 .tag.active{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
 .tag .spec{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:10.5px}
-.tag.active .spec{color:rgba(51,112,255,.65)}
+.tag.active .spec{color:rgba(62,47,224,.65)}
 button.tag{cursor:pointer;font-family:inherit}
 button.tag:hover{border-color:var(--primary-border);box-shadow:var(--shadow-sm)}
 
@@ -213,7 +232,7 @@ a.drive:hover{border-bottom-style:solid}
   background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);
   transition:border-color .2s ease, box-shadow .2s ease;
 }
-.time-range input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+.time-range input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(62,47,224,.14)}
 .time-range input:disabled{opacity:.6;background:var(--panel-2)}
 .time-range .time-sep{color:var(--faint)}
 .preset-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
@@ -293,30 +312,41 @@ a.drive:hover{border-bottom-style:solid}
   word-break:break-all;line-height:1.4;
 }
 .slot .fsize{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,.75)}
-.slot .overlay a.drive{color:#8FB4FF;border-bottom-color:rgba(143,180,255,.5)}
+.slot .overlay a.drive{color:#B9B2FB;border-bottom-color:rgba(185,178,251,.5)}
 
 .progress-track{height:4px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}
 .progress-fill{height:100%;border-radius:99px;background:var(--primary);transition:width .2s ease}
-.progress-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:#8FB4FF}
+.progress-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:#B9B2FB}
 .progress-label.reconnect{color:var(--amber-bright)}
 
-/* ── rating ──────────────────────────────────────────── */
-.rate-label{font-size:11.5px;color:var(--muted);letter-spacing:.01em;margin-bottom:6px}
-.rating{display:flex;gap:6px}
+/* ── rating: signature LED test-panel ────────────────── */
+/* Each rating is a status LED on a QA rig — dark, unlit by default; the
+   chosen one lights up with a colored glow. On-subject for a speed test. */
+.rate-label{margin-bottom:8px}
+.rating{display:flex;gap:8px}
 .rating button{
-  flex:1;padding:0 4px;min-height:44px;
-  background:var(--panel);border:1px solid var(--line);
-  border-radius:8px;color:var(--muted);
-  font-family:inherit;font-size:12px;font-weight:500;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;
-  transition:all .2s ease;
+  flex:1;padding:8px 4px 9px;min-height:52px;
+  background:var(--panel-2);border:1px solid var(--line);
+  border-radius:10px;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  transition:all .18s ease;
 }
-.rating button .dot{width:6px;height:6px}
-.rating button:hover:not(:disabled){border-color:var(--primary-border);color:var(--text);box-shadow:var(--shadow-sm)}
-.rating button:disabled{opacity:.55;cursor:default}
-.rating button.sel-g{background:var(--green-soft);border-color:rgba(52,199,36,.5);color:var(--green)}
-.rating button.sel-a{background:var(--amber-soft);border-color:rgba(255,136,0,.5);color:var(--amber)}
-.rating button.sel-r{background:var(--red-soft);border-color:rgba(245,74,69,.5);color:var(--red)}
+/* the LED itself — dim when idle */
+.rating button .dot{
+  width:11px;height:11px;border-radius:50%;background:var(--faint);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.06);transition:all .18s ease;
+}
+.rating button:hover:not(:disabled){border-color:var(--primary-border);color:var(--text)}
+.rating button:disabled{opacity:.5;cursor:default}
+/* lit states — LED glows in the signal color */
+.rating button.sel-g{background:var(--green-soft);border-color:var(--green-bright);color:var(--green)}
+.rating button.sel-a{background:var(--amber-soft);border-color:var(--amber-bright);color:var(--amber)}
+.rating button.sel-r{background:var(--red-soft);border-color:var(--red-bright);color:var(--red)}
+.rating button.sel-g .dot{background:var(--green-bright);box-shadow:0 0 0 3px var(--green-soft),0 0 10px var(--green-bright)}
+.rating button.sel-a .dot{background:var(--amber-bright);box-shadow:0 0 0 3px var(--amber-soft),0 0 10px var(--amber-bright)}
+.rating button.sel-r .dot{background:var(--red-bright);box-shadow:0 0 0 3px var(--red-soft),0 0 10px var(--red-bright)}
 .rating button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
 /* ── notes ───────────────────────────────────────────── */
@@ -328,7 +358,7 @@ a.drive:hover{border-bottom-style:solid}
   transition:border-color .2s ease, box-shadow .2s ease;
 }
 .notes textarea::placeholder{color:var(--faint)}
-.notes textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+.notes textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(62,47,224,.14)}
 .notes textarea:disabled{opacity:.6;background:var(--panel-2)}
 .hint{
   font-family:'JetBrains Mono',monospace;
@@ -348,7 +378,7 @@ a.drive:hover{border-bottom-style:solid}
 .btn:hover:not(:disabled){border-color:var(--primary-border);color:var(--primary);box-shadow:var(--shadow-sm)}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
-.btn.primary:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover);color:#fff;box-shadow:0 4px 12px rgba(51,112,255,.3)}
+.btn.primary:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover);color:#fff;box-shadow:0 4px 14px rgba(62,47,224,.32)}
 .btn.small{padding:6px 12px;font-size:12px}
 .btn.block{width:100%}
 .btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
@@ -364,7 +394,7 @@ a.drive:hover{border-bottom-style:solid}
   font-family:inherit;font-size:13.5px;
   transition:border-color .2s ease, box-shadow .2s ease;
 }
-.field select:focus,.field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+.field select:focus,.field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(62,47,224,.14)}
 .tag-row{display:flex;gap:8px;flex-wrap:wrap}
 .seg{display:flex;gap:6px}
 .seg button{
@@ -418,7 +448,7 @@ a.drive:hover{border-bottom-style:solid}
   font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:.35em;text-align:center;
   transition:border-color .2s ease, box-shadow .2s ease;
 }
-.pass-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+.pass-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(62,47,224,.14)}
 
 /* ── how-it-works panel ──────────────────────────────── */
 .howto{
@@ -464,7 +494,7 @@ a.drive:hover{border-bottom-style:solid}
   background:var(--panel);border:1px solid var(--line);color:var(--text);
   font-family:inherit;font-size:13px;
 }
-.add-device input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(51,112,255,.12)}
+.add-device input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(62,47,224,.14)}
 
 /* ── summary bar ─────────────────────────────────────── */
 .summary{
