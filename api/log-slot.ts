@@ -59,13 +59,15 @@ type Body = {
   brand: BrandConfig;
   rating: 'smooth' | 'slight' | 'strong';
   notes: string;
+  minBet: string;
   driveLink: string;
 };
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-    const { session, brandIndex, brand, rating, notes, driveLink } = req.body as Body;
+    const { session, brandIndex, brand, rating, notes, minBet, driveLink } =
+      req.body as Body;
 
     const marketCfg = MARKETS[session.market];
     if (!marketCfg) throw new Error(`Unknown market "${session.market}"`);
@@ -114,7 +116,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       rowNumber = 2;
     }
 
-    const note = [notes.trim(), `Video: ${driveLink}`].filter(Boolean).join('\n\n');
+    const note = [`Min bet: ${minBet}`, notes.trim(), `Video: ${driveLink}`]
+      .filter(Boolean)
+      .join('\n\n');
     await batchUpdate([
       {
         updateCells: {

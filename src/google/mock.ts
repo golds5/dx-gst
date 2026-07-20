@@ -101,7 +101,7 @@ export const mockBackend: GoogleBackend = {
     };
   },
 
-  async logSlot({ session, brandIndex, brand, rating, notes, driveLink }: LogSlotArgs) {
+  async logSlot({ session, brandIndex, brand, rating, notes, minBet, driveLink }: LogSlotArgs) {
     await sleep(350);
     const tab = MARKETS[session.market].sheetTab;
     const rows = state.tabs.get(tab) ?? [];
@@ -119,7 +119,9 @@ export const mockBackend: GoogleBackend = {
     } else {
       log(`reusing existing row ${idx + 2} in "${tab}"`);
     }
-    const note = [notes.trim(), `Video: ${driveLink}`].filter(Boolean).join('\n\n');
+    const note = [`Min bet: ${minBet}`, notes.trim(), `Video: ${driveLink}`]
+      .filter(Boolean)
+      .join('\n\n');
     rows[idx].cells[brandIndex] = {
       label: brandCellLabel(brand),
       color: JSON.stringify(RATING_COLORS[rating]),

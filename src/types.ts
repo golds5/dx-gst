@@ -8,9 +8,10 @@ export type Session = {
   isoYear: number;
   weekNumber: number;
   testDate: string; // YYYY-MM-DD
-  device: string; // DeviceConfig.id
+  device: string; // tester-reported device label
   provider: string;
   game: string;
+  minBet: string; // e.g. '0.02 PHP' — region+game specific
 };
 
 export type SlotStatus = 'empty' | 'uploading' | 'uploaded' | 'logged' | 'error';

@@ -31,6 +31,7 @@ export type LogSlotArgs = {
   brand: BrandConfig;
   rating: Rating;
   notes: string;
+  minBet: string; // recorded in the cell note as testing context
   driveLink: string;
 };
 

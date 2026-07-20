@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { DEVICES, GAMES, MARKETS, REGION_PASSCODES } from '../config';
+import {
+  DEVICES,
+  MARKETS,
+  PROVIDER_ICONS,
+  REGION_PASSCODES,
+  gamesForRegionProvider,
+  providersForRegion,
+} from '../config';
 import { formatSheetDate, isoWeekOf, pad2, suggestSessionOfWeek } from '../lib/naming';
 import { backend } from '../google';
 import type { Session } from '../types';
@@ -39,7 +46,8 @@ export function SessionSetup({ onStart }: Props) {
   const [addingDevice, setAddingDevice] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceSpec, setNewDeviceSpec] = useState('');
-  const [gameIdx, setGameIdx] = useState(0);
+  const [provider, setProvider] = useState<string | null>(null);
+  const [gameName, setGameName] = useState<string | null>(null);
   const [sessionOfWeek, setSessionOfWeek] = useState<1 | 2>(1);
   const [autoSuggested, setAutoSuggested] = useState(false);
 
@@ -106,9 +114,10 @@ export function SessionSetup({ onStart }: Props) {
   }
 
   function start() {
-    if (!market) return;
+    if (!market || !provider || !gameName) return;
+    const game = gamesForRegionProvider(market, provider).find((g) => g.game === gameName);
+    if (!game) return;
     localStorage.setItem(LAST_DEVICE_KEY, device);
-    const game = GAMES[gameIdx];
     onStart({
       market,
       sessionOfWeek,
@@ -118,6 +127,7 @@ export function SessionSetup({ onStart }: Props) {
       device,
       provider: game.provider,
       game: game.game,
+      minBet: game.minBet,
     });
   }
 
@@ -307,26 +317,56 @@ export function SessionSetup({ onStart }: Props) {
       {step === 3 && marketCfg && (
         <>
           <div className="field">
-            <label className="field-label" htmlFor="game">
-              Game under test · usually 2 games per test day
-            </label>
-            <select
-              id="game"
-              value={gameIdx}
-              onChange={(e) => setGameIdx(Number(e.target.value))}
-            >
-              {GAMES.map((g, i) => (
-                <option key={`${g.provider}-${g.game}`} value={i}>
-                  {g.icon} {g.provider} — {g.game}
-                </option>
+            <span className="field-label">Provider</span>
+            <div className="tag-row">
+              {providersForRegion(market!).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`tag${provider === p ? ' active' : ''}`}
+                  onClick={() => {
+                    setProvider(p);
+                    setGameName(null);
+                  }}
+                >
+                  {PROVIDER_ICONS[p] ?? '🎰'} {p}
+                </button>
               ))}
-            </select>
-            <div className="auto-note">
-              Finish this game&apos;s brands first, then start a new session for game 2 —
-              it gets its own heatmap row.
             </div>
           </div>
-          <button type="button" className="btn primary block" onClick={start}>
+
+          {provider && (
+            <div className="field">
+              <span className="field-label">
+                Game under test · usually 2 games per test day
+              </span>
+              <div className="game-list">
+                {gamesForRegionProvider(market!, provider).map((g) => (
+                  <button
+                    key={g.game}
+                    type="button"
+                    className={`game-option${gameName === g.game ? ' on' : ''}`}
+                    onClick={() => setGameName(g.game)}
+                  >
+                    <span className="game-name">{g.game}</span>
+                    <span className="game-minbet">min {g.minBet}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="auto-note">
+                Set the game&apos;s <b>minimum bet</b> before recording. Finish this
+                game&apos;s brands, then change setup to test the next game — it gets its
+                own heatmap row.
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="btn primary block"
+            disabled={!gameName}
+            onClick={start}
+          >
             Start session → {marketCfg.brands.length} brand slots
           </button>
         </>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DEVICES, GAMES, MARKETS } from '../config';
+import { DEVICES, MARKETS, PROVIDER_ICONS } from '../config';
 import { formatSheetDate, pad2 } from '../lib/naming';
 import type { Session, SlotEntry } from '../types';
 import { SlotCard } from './SlotCard';
@@ -35,9 +35,6 @@ export function SlotGrid({
 }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
   const marketCfg = MARKETS[session.market];
-  const game = GAMES.find(
-    (g) => g.provider === session.provider && g.game === session.game,
-  );
   // session.device is the tester-reported device label; spec shown when known.
   const deviceSpec = DEVICES.find((d) => d.label === session.device)?.spec;
   const pinnedCount = slots.filter((s) => !s.brand.isCompetitor).length;
@@ -47,7 +44,7 @@ export function SlotGrid({
   return (
     <>
       <div className="page-head">
-        <div className="game-icon">{game?.icon ?? '🎰'}</div>
+        <div className="game-icon">{PROVIDER_ICONS[session.provider] ?? '🎰'}</div>
         <div>
           <h1>{session.game}</h1>
           <div className="sub">
@@ -78,6 +75,15 @@ export function SlotGrid({
             <span className="tag active">
               ✓ {session.device}
               {deviceSpec && <span className="spec">{deviceSpec}</span>}
+            </span>
+          </div>
+        </div>
+        <div className="prop">
+          <div className="prop-label">Min bet</div>
+          <div className="prop-value">
+            <span className="tag active minbet-tag">💰 {session.minBet}</span>
+            <span className="drive-note" style={{ color: 'var(--faint)' }}>
+              set this bet before recording
             </span>
           </div>
         </div>

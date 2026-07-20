@@ -147,6 +147,7 @@ export default function App() {
         brand: slot.brand,
         rating: slot.rating,
         notes,
+        minBet: currentSession.minBet,
         driveLink: driveLink!,
       });
       updateSlot(index, { status: 'logged' });

@@ -112,21 +112,101 @@ export const DEVICES: DeviceConfig[] = [
   { id: 'VivoY20S', label: 'Vivo Y20S', spec: '2020 · 4G RAM' },
 ];
 
-// ─── Providers & games ───────────────────────────────────────────────
+// ─── Providers & games (region-scoped) ───────────────────────────────
+// Games available per region. A game absent from a region's list is banned /
+// not opened there (e.g. Jili "Golden Empire 2" is not in MX). Min bet is in
+// that region's currency and can differ per game (e.g. PH PP games).
 export type GameConfig = {
-  provider: string; // used in the video filename, e.g. 'JILI'
-  game: string; // used in the video filename, e.g. 'Golden Empire' → GoldenEmpire
-  sheetLabel: string; // provider name as displayed in Sheet column D, e.g. 'Jili'
-  icon: string;
+  provider: string; // display + sheet + filename, e.g. 'PP', 'PG Soft'
+  game: string; // e.g. 'Gates of Olympus Super Scatter'
+  minBet: string; // e.g. '0.02 PHP' (currency included)
 };
 
-export const GAMES: GameConfig[] = [
-  { provider: 'JILI', game: 'Golden Empire', sheetLabel: 'Jili', icon: '🪙' },
-  { provider: 'JILI', game: 'Super Ace', sheetLabel: 'Jili', icon: '🃏' },
-  { provider: 'PGSoft', game: 'Fortune Tiger', sheetLabel: 'PG Soft', icon: '🐯' },
-  { provider: 'PGSoft', game: 'Lucky Neko', sheetLabel: 'PG Soft', icon: '🐱' },
-  // TODO: extend with the full weekly rotation of provider/game pairs.
-];
+// One icon per provider, used in the game picker + session header.
+export const PROVIDER_ICONS: Record<string, string> = {
+  'PG Soft': '🀄',
+  Jili: '🪙',
+  PP: '⚡',
+  Fachai: '🐉',
+};
+
+export const REGION_GAMES: Record<string, GameConfig[]> = {
+  TH: [
+    { provider: 'PG Soft', game: 'Ways of the Qilin', minBet: '1 THB' },
+    { provider: 'PG Soft', game: 'Treasures of Aztec', minBet: '1 THB' },
+    { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '1 THB' },
+    { provider: 'Jili', game: 'Golden Empire 2', minBet: '1 THB' },
+    { provider: 'Jili', game: 'Golden Empire', minBet: '1 THB' },
+    { provider: 'Jili', game: 'Fortune Coins 2', minBet: '1 THB' },
+    { provider: 'PP', game: "Joker's Revenge", minBet: '1 THB' },
+    { provider: 'PP', game: 'Wild Skullz', minBet: '1 THB' },
+    { provider: 'PP', game: 'Gates of Olympus Super Scatter', minBet: '1 THB' },
+    { provider: 'Fachai', game: 'ZEUS', minBet: '1 THB' },
+    { provider: 'Fachai', game: 'KONG ISLAND', minBet: '1 THB' },
+  ],
+  PH: [
+    { provider: 'PG Soft', game: 'Ways of the Qilin', minBet: '1 PHP' },
+    { provider: 'PG Soft', game: 'Treasures of Aztec', minBet: '1 PHP' },
+    { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '1 PHP' },
+    { provider: 'Jili', game: 'Golden Empire 2', minBet: '1 PHP' },
+    { provider: 'Jili', game: 'Golden Empire', minBet: '1 PHP' },
+    { provider: 'Jili', game: 'Fortune Coins 2', minBet: '1 PHP' },
+    { provider: 'PP', game: "Joker's Revenge", minBet: '0.05 PHP' },
+    { provider: 'PP', game: 'Wild Skullz', minBet: '0.02 PHP' },
+    { provider: 'PP', game: 'Gates of Olympus Super Scatter', minBet: '0.02 PHP' },
+    { provider: 'Fachai', game: 'ZEUS', minBet: '1 PHP' },
+    { provider: 'Fachai', game: 'KONG ISLAND', minBet: '0.5 PHP' },
+  ],
+  BD: [
+    { provider: 'PG Soft', game: 'Ways of the Qilin', minBet: '2 TK' },
+    { provider: 'PG Soft', game: 'Treasures of Aztec', minBet: '2 TK' },
+    { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '2 TK' },
+    { provider: 'Jili', game: 'Golden Empire 2', minBet: '1 TK' },
+    { provider: 'Jili', game: 'Golden Empire', minBet: '1 TK' },
+    { provider: 'Jili', game: 'Fortune Coins 2', minBet: '1 TK' },
+    { provider: 'PP', game: "Joker's Revenge", minBet: '0.5 TK' },
+    { provider: 'PP', game: 'Wild Skullz', minBet: '0.4 TK' },
+    { provider: 'PP', game: 'Gates of Olympus Super Scatter', minBet: '0.4 TK' },
+    { provider: 'Fachai', game: 'ZEUS', minBet: '1 TK' },
+    { provider: 'Fachai', game: 'KONG ISLAND', minBet: '0.5 TK' },
+  ],
+  MX: [
+    { provider: 'PG Soft', game: 'Ways of the Qilin', minBet: '2 MXN' },
+    { provider: 'PG Soft', game: 'Treasures of Aztec', minBet: '2 MXN' },
+    { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '2 MXN' },
+    // Jili "Golden Empire 2" is not opened in MX.
+    { provider: 'Jili', game: 'Golden Empire', minBet: '2 MXN' },
+    { provider: 'Jili', game: 'Fortune Coins 2', minBet: '2 MXN' },
+    { provider: 'PP', game: "Joker's Jewels Cash", minBet: '0.5 MXN' },
+    { provider: 'PP', game: 'Wild Skullz', minBet: '0.6 MXN' },
+    { provider: 'PP', game: 'Gates of Olympus Super Scatter', minBet: '0.6 MXN' },
+    { provider: 'Fachai', game: 'ZEUS', minBet: '1 MXN' },
+    { provider: 'Fachai', game: 'KONG ISLAND', minBet: '0.1 MXN' },
+  ],
+};
+
+// Distinct providers available in a region, in list order.
+export function providersForRegion(market: string): string[] {
+  const seen: string[] = [];
+  for (const g of REGION_GAMES[market] ?? []) {
+    if (!seen.includes(g.provider)) seen.push(g.provider);
+  }
+  return seen;
+}
+
+export function gamesForRegionProvider(market: string, provider: string): GameConfig[] {
+  return (REGION_GAMES[market] ?? []).filter((g) => g.provider === provider);
+}
+
+export function findGame(
+  market: string,
+  provider: string,
+  game: string,
+): GameConfig | undefined {
+  return (REGION_GAMES[market] ?? []).find(
+    (g) => g.provider === provider && g.game === game,
+  );
+}
 
 // ─── Admin passcode ──────────────────────────────────────────────────
 // Gate for the read-only heatmap viewer. Client-side soft gate (ships in
