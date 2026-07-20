@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DEVICES, MARKETS, PROVIDER_ICONS } from '../config';
+import { MARKETS, PROVIDER_ICONS } from '../config';
 import { formatSheetDate, pad2 } from '../lib/naming';
 import type { Session, SlotEntry } from '../types';
 import { SlotCard } from './SlotCard';
@@ -35,9 +35,6 @@ export function SlotGrid({
 }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
   const marketCfg = MARKETS[session.market];
-  // session.device is the tester-reported device label; spec shown when known.
-  const deviceSpec = DEVICES.find((d) => d.label === session.device)?.spec;
-  const pinnedCount = slots.filter((s) => !s.brand.isCompetitor).length;
   const loggedCount = slots.filter((s) => s.status === 'logged').length;
   const errorSlots = slots.filter((s) => s.status === 'error');
 
@@ -59,73 +56,39 @@ export function SlotGrid({
         </div>
       </div>
 
-      <div className="props">
-        <div className="prop">
-          <div className="prop-label">Test date</div>
-          <div className="prop-value">
-            <span className="mono">{formatSheetDate(session.testDate)}</span>
-            <span className="mono" style={{ color: 'var(--faint)' }}>
-              · {session.isoYear}
-            </span>
-          </div>
-        </div>
-        <div className="prop">
-          <div className="prop-label">Device</div>
-          <div className="prop-value">
-            <span className="tag active">
-              ✓ {session.device}
-              {deviceSpec && <span className="spec">{deviceSpec}</span>}
-            </span>
-          </div>
-        </div>
-        <div className="prop">
-          <div className="prop-label">Min bet</div>
-          <div className="prop-value">
-            <span className="tag active minbet-tag">💰 {session.minBet}</span>
-            <span className="drive-note" style={{ color: 'var(--faint)' }}>
-              set this bet before recording
-            </span>
-          </div>
-        </div>
-        <div className="prop">
-          <div className="prop-label">Session</div>
-          <div className="prop-value">
-            <button type="button" className="tag" onClick={onNewSession}>
-              ← Change session setup
-            </button>
-          </div>
-        </div>
+      {/* Compact always-visible session bar — min bet is the critical value. */}
+      <div className="session-bar">
+        <span className="chip strong">💰 min {session.minBet}</span>
+        <span className="chip">📱 {session.device}</span>
+        <span className="chip muted">{formatSheetDate(session.testDate)}</span>
+        <button type="button" className="chip change" onClick={onNewSession}>
+          ↺ Change game
+        </button>
       </div>
 
-      <div className="callout">
-        <span>💡</span>
-        <div>
-          <b>Log one brand at a time.</b>
-          <ol className="steps-list">
-            <li>
-              <b>Tap</b> a brand to open it.
-            </li>
-            <li>
-              <b>Upload</b> your screen recording into the phone slot.
-            </li>
-            <li>
-              <b>Rate</b> the gameplay: Smooth, Slight, or Strong lag.
-            </li>
-            <li>
-              <b>If it lags,</b> enter the time frame (mm:ss – mm:ss) and tap the issue
-              types.
-            </li>
-            <li>
-              <b>Submit.</b> The video saves to Drive and the heatmap updates.
-            </li>
-          </ol>
-        </div>
-      </div>
+      {/* Secondary content collapsed by default to keep actions above the fold. */}
+      <details className="callout compact">
+        <summary>💡 How to log a brand</summary>
+        <ol className="steps-list">
+          <li>
+            <b>Tap</b> a brand → <b>upload</b> your 30–60s recording.
+          </li>
+          <li>
+            <b>Rate</b> it: Smooth / Slight / Strong lag.
+          </li>
+          <li>
+            <b>If it lags,</b> add the time frame (mm:ss – mm:ss) + issue type.
+          </li>
+          <li>
+            <b>Submit.</b> Cell turns green/amber/red when logged.
+          </li>
+        </ol>
+      </details>
 
       <div className="section-head">
-        <h2>Brand recordings</h2>
+        <h2>Brands</h2>
         <span className="count">
-          {slots.length} BRANDS · {pinnedCount} PINNED
+          {loggedCount}/{slots.length} logged
         </span>
         <div className="legend">
           <span>
@@ -134,11 +97,11 @@ export function SlotGrid({
           </span>
           <span>
             <span className="dot a" />
-            Slight lag
+            Slight
           </span>
           <span>
             <span className="dot r" />
-            Strong lag
+            Strong
           </span>
         </div>
       </div>
