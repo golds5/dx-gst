@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, CSSProperties } from 'react';
 import { LAG_PRESETS } from '../config';
 import { buildLagNotes, formatClockInput, validateLagReport } from '../lib/naming';
 import type { Rating, SlotEntry } from '../types';
@@ -254,11 +254,22 @@ export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: P
             !done && (
               <button
                 type="button"
-                className="btn primary small block"
+                className="btn primary small block submit-btn"
                 disabled={!canSubmit || busy}
                 onClick={onSubmit}
+                style={
+                  busy
+                    ? ({ '--pct': `${slot.progress ?? 0}%` } as CSSProperties)
+                    : undefined
+                }
               >
-                {busy ? 'Uploading…' : status === 'uploaded' ? 'Logging…' : 'Submit slot'}
+                {busy
+                  ? slot.reconnecting
+                    ? 'Reconnecting…'
+                    : `Uploading ${slot.progress ?? 0}%`
+                  : status === 'uploaded'
+                    ? 'Logging…'
+                    : 'Submit slot'}
               </button>
             )
           )}

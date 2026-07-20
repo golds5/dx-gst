@@ -71,7 +71,7 @@ export function SlotGrid({
         <summary>💡 How to log a brand</summary>
         <ol className="steps-list">
           <li>
-            <b>Tap</b> a brand → <b>upload</b> your 30–60s recording.
+            <b>Tap</b> a brand → <b>upload</b> your recording for that brand.
           </li>
           <li>
             <b>Rate</b> it: Smooth / Slight / Strong lag.
@@ -106,30 +106,33 @@ export function SlotGrid({
         </div>
       </div>
 
+      {/* The opened brand is pinned to the top so the VA never scrolls to find
+          the card they're working on. */}
+      {expanded !== null && slots[expanded] && (
+        <div className="expanded-top">
+          <SlotCard
+            slot={slots[expanded]}
+            onPickFile={(f) => onPickFile(expanded, f)}
+            onChange={(patch) => onChange(expanded, patch)}
+            onSubmit={() => onSubmit(expanded)}
+            onCollapse={() => setExpanded(null)}
+          />
+        </div>
+      )}
+
       <div className="grid tickets">
         {slots.map((slot, i) => {
           const key = `${slot.brand.group}-${slot.brand.name}`;
-          if (expanded === i) {
-            return (
-              <div className="expanded-wrap" key={key}>
-                <SlotCard
-                  slot={slot}
-                  onPickFile={(f) => onPickFile(i, f)}
-                  onChange={(patch) => onChange(i, patch)}
-                  onSubmit={() => onSubmit(i)}
-                  onCollapse={() => setExpanded(null)}
-                />
-              </div>
-            );
-          }
           return (
             <button
               type="button"
               key={key}
               className={`ticket${slot.brand.isCompetitor ? '' : ' pinned'}${
                 slot.status === 'logged' ? ' logged' : ''
-              }${slot.status === 'error' ? ' errored' : ''}`}
-              onClick={() => setExpanded(i)}
+              }${slot.status === 'error' ? ' errored' : ''}${
+                expanded === i ? ' open' : ''
+              }`}
+              onClick={() => setExpanded(expanded === i ? null : i)}
               aria-label={`Open ${slot.brand.name}`}
             >
               <div>
@@ -138,7 +141,11 @@ export function SlotGrid({
                 </div>
                 <div className="brand-name">{slot.brand.name}</div>
               </div>
-              <TicketStatus slot={slot} />
+              {expanded === i ? (
+                <span className="status-chip busy">OPEN ↑</span>
+              ) : (
+                <TicketStatus slot={slot} />
+              )}
             </button>
           );
         })}
