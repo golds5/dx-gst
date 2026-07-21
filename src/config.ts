@@ -212,7 +212,7 @@ export function findGame(
 // Gate for the read-only heatmap viewer. Client-side soft gate (ships in
 // the bundle) — treat as team friction, not real security.
 // TODO: change before rollout.
-export const ADMIN_PASSCODE = '1212';
+export const ADMIN_PASSCODE = '1345';
 
 // ─── Region passcodes ────────────────────────────────────────────────
 // Soft gate: a tester must enter the region's code before opening a session

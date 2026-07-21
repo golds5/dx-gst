@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { ChangeEvent, CSSProperties } from 'react';
 import { LAG_PRESETS } from '../config';
-import { buildLagNotes, formatClockInput, validateLagReport } from '../lib/naming';
+import {
+  buildLagNotes,
+  formatClockInput,
+  normalizeClockInput,
+  validateLagReport,
+} from '../lib/naming';
 import type { Rating, SlotEntry } from '../types';
 
 const RATING_META: { key: Rating; cls: string; dot: string; label: string }[] = [
@@ -200,6 +205,7 @@ export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: P
                   value={slot.lagStart ?? ''}
                   disabled={locked}
                   onChange={(e) => onChange({ lagStart: formatClockInput(e.target.value) })}
+                  onBlur={(e) => onChange({ lagStart: normalizeClockInput(e.target.value) })}
                 />
                 <span className="time-sep">–</span>
                 <input
@@ -209,6 +215,7 @@ export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: P
                   value={slot.lagEnd ?? ''}
                   disabled={locked}
                   onChange={(e) => onChange({ lagEnd: formatClockInput(e.target.value) })}
+                  onBlur={(e) => onChange({ lagEnd: normalizeClockInput(e.target.value) })}
                 />
               </div>
 

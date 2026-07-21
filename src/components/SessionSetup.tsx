@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ADMIN_PASSCODE,
   DEVICES,
   MARKETS,
   PROVIDER_ICONS,
@@ -7,7 +8,13 @@ import {
   gamesForRegionProvider,
   providersForRegion,
 } from '../config';
-import { formatSheetDate, isoWeekOf, pad2, suggestSessionOfWeek } from '../lib/naming';
+import {
+  formatSheetDate,
+  isoWeekBounds,
+  isoWeekOf,
+  pad2,
+  suggestSessionOfWeek,
+} from '../lib/naming';
 import { backend } from '../google';
 import type { Session } from '../types';
 
@@ -31,9 +38,13 @@ function storedDevices(): CustomDevice[] {
   }
 }
 
-type Props = { onStart: (session: Session) => void; initial?: Session | null };
+type Props = {
+  onStart: (session: Session) => void;
+  initial?: Session | null;
+  onAdmin?: () => void;
+};
 
-export function SessionSetup({ onStart, initial }: Props) {
+export function SessionSetup({ onStart, initial, onAdmin }: Props) {
   // Resuming from "Change game": region/date/device stay, jump to the game step.
   const [step, setStep] = useState(initial ? 3 : 0);
   const [market, setMarket] = useState<string | null>(initial?.market ?? null);
@@ -90,14 +101,35 @@ export function SessionSetup({ onStart, initial }: Props) {
     }
   }
 
+  function unlockRegion(value: string) {
+    if (!market) return;
+    localStorage.setItem(passKey(market), value);
+    setPassError(false);
+    setPassInput('');
+    setStep(1);
+  }
+
   function submitPasscode() {
     if (!market) return;
-    if (passInput.trim() === REGION_PASSCODES[market]) {
-      localStorage.setItem(passKey(market), passInput.trim());
+    const value = passInput.trim();
+    if (value === REGION_PASSCODES[market]) {
+      unlockRegion(value);
+    } else if (value === ADMIN_PASSCODE && onAdmin) {
       setPassError(false);
-      setStep(1);
+      setPassInput('');
+      onAdmin();
     } else {
       setPassError(true);
+    }
+  }
+
+  function onPassChange(raw: string) {
+    // Numeric-only, max 4 characters — matches the passcode format.
+    const digits = raw.replace(/\D/g, '').slice(0, 4);
+    setPassInput(digits);
+    setPassError(false);
+    if (market && digits === REGION_PASSCODES[market]) {
+      unlockRegion(digits);
     }
   }
 
@@ -150,14 +182,33 @@ export function SessionSetup({ onStart, initial }: Props) {
         </div>
       </div>
 
-      {step > 0 && (
-        <button type="button" className="step-back" onClick={() => setStep(step - 1)}>
-          ← Back
-        </button>
-      )}
-
       {step === 0 && (
         <>
+          <details className="howto" open>
+            <summary>❓ How it works (5 steps)</summary>
+            <ol>
+              <li>
+                Tap your <b>region</b> → enter the <b>passcode</b>.
+              </li>
+              <li>
+                Pick the <b>test date</b> and your <b>device</b> (add it once if new).
+              </li>
+              <li>
+                Pick the provider and the game you were asked to test.{' '}
+                <b>Set the game&apos;s minimum bet</b> (shown on screen) before recording.
+              </li>
+              <li>
+                For each brand: <b>record the full session</b> — from tapping the
+                game icon through <b>all 50 autospins</b> — then upload the video
+                and pick a <b>rating</b> (🟢/🟡/🔴). For lag, add the{' '}
+                <b>time frame (mm:ss–mm:ss)</b> + <b>issue type</b>.
+              </li>
+              <li>
+                Submit each brand. When all show <b>LOGGED ✓</b>, reply ✅ in Lark.
+              </li>
+            </ol>
+          </details>
+
           <div className="field">
             <span className="field-label">Region</span>
             <div className="region-grid">
@@ -185,13 +236,12 @@ export function SessionSetup({ onStart, initial }: Props) {
                   id="passcode"
                   type="password"
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
                   autoComplete="off"
                   placeholder="••••"
                   value={passInput}
-                  onChange={(e) => {
-                    setPassInput(e.target.value);
-                    setPassError(false);
-                  }}
+                  onChange={(e) => onPassChange(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && submitPasscode()}
                 />
                 <button type="button" className="btn primary" onClick={submitPasscode}>
@@ -207,24 +257,6 @@ export function SessionSetup({ onStart, initial }: Props) {
             </div>
           )}
 
-          <details className="howto">
-            <summary>❓ How it works (5 steps)</summary>
-            <ol>
-              <li>Tap your region → enter the passcode.</li>
-              <li>Pick the test date and your device (add it once if new).</li>
-              <li>
-                Pick the provider and the game you were asked to test.{' '}
-                <b>Set the game&apos;s minimum bet</b> (shown on screen) before recording.
-              </li>
-              <li>
-                For each brand: record 30–60s, upload the video, pick a rating
-                (🟢/🟡/🔴). For lag, add the time frame (mm:ss–mm:ss) + issue type.
-              </li>
-              <li>
-                Submit each brand. When all show <b>LOGGED ✓</b>, reply ✅ in Lark.
-              </li>
-            </ol>
-          </details>
         </>
       )}
 
@@ -237,9 +269,17 @@ export function SessionSetup({ onStart, initial }: Props) {
             </label>
             <input
               id="date"
+              className="date-input"
               type="date"
               value={testDate}
-              onChange={(e) => e.target.value && setTestDate(e.target.value)}
+              min={isoWeekBounds(todayLocalISO()).monday}
+              max={isoWeekBounds(todayLocalISO()).sunday}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v) return;
+                const { monday, sunday } = isoWeekBounds(todayLocalISO());
+                if (v >= monday && v <= sunday) setTestDate(v);
+              }}
             />
           </div>
           {marketCfg.sessionsPerWeek === 2 && (
@@ -269,6 +309,9 @@ export function SessionSetup({ onStart, initial }: Props) {
           )}
           <button type="button" className="btn primary block" onClick={() => setStep(2)}>
             Continue
+          </button>
+          <button type="button" className="step-back" onClick={() => setStep(0)}>
+            ← Back
           </button>
         </>
       )}
@@ -331,6 +374,9 @@ export function SessionSetup({ onStart, initial }: Props) {
           >
             Continue
           </button>
+          <button type="button" className="step-back" onClick={() => setStep(1)}>
+            ← Back
+          </button>
         </>
       )}
 
@@ -388,6 +434,9 @@ export function SessionSetup({ onStart, initial }: Props) {
             onClick={start}
           >
             Start session → {marketCfg.brands.length} brand slots
+          </button>
+          <button type="button" className="step-back" onClick={() => setStep(2)}>
+            ← Back
           </button>
         </>
       )}

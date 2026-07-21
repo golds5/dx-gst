@@ -196,7 +196,14 @@ export default function App() {
       {adminView ? (
         <AdminScreen onExit={() => setAdminView(false)} />
       ) : !session ? (
-        <SessionSetup onStart={startSession} initial={resume} />
+        <SessionSetup
+          onStart={startSession}
+          initial={resume}
+          onAdmin={() => {
+            localStorage.setItem('dxgst.admin', '1345');
+            setAdminView(true);
+          }}
+        />
       ) : (
         <SlotGrid
           session={session}
@@ -226,12 +233,7 @@ export default function App() {
 
       <footer>
         <span>DX-GST · GAME SPEED TEST</span>
-        {!adminView && !session && (
-          <button type="button" className="admin-link" onClick={() => setAdminView(true)}>
-            Admin · view heatmap →
-          </button>
-        )}
-        <span>
+<span>
           {USE_MOCK_GOOGLE
             ? 'LOCAL DEV — GOOGLE APIS MOCKED'
             : 'TEAM UPLOADER · NO SIGN-IN NEEDED'}

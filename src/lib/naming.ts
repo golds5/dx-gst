@@ -21,6 +21,20 @@ export function camelPart(input: string): string {
 }
 
 // ISO-8601 year + week number for a YYYY-MM-DD date string.
+// Monday..Sunday YYYY-MM-DD strings for the ISO week containing `dateStr`.
+export function isoWeekBounds(dateStr: string): { monday: string; sunday: string } {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  const dayNr = (t.getUTCDay() + 6) % 7;
+  const mon = new Date(t);
+  mon.setUTCDate(t.getUTCDate() - dayNr);
+  const sun = new Date(mon);
+  sun.setUTCDate(mon.getUTCDate() + 6);
+  const fmt = (d: Date) =>
+    `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+  return { monday: fmt(mon), sunday: fmt(sun) };
+}
+
 export function isoWeekOf(dateStr: string): { isoYear: number; weekNumber: number } {
   const [y, m, d] = dateStr.split('-').map(Number);
   const target = new Date(Date.UTC(y, m - 1, d));
@@ -132,6 +146,17 @@ export function formatClockInput(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 4);
   if (digits.length <= 2) return digits;
   return `${digits.slice(0, -2)}:${digits.slice(-2)}`;
+}
+
+// Normalize a partially-typed value into a full mm:ss on blur/commit. The
+// last two digits are always seconds, the rest are minutes — so "23" becomes
+// "00:23", "130" becomes "01:30". Empty input stays empty.
+export function normalizeClockInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4);
+  if (!digits) return '';
+  const ss = digits.slice(-2).padStart(2, '0');
+  const mm = (digits.slice(0, -2) || '0').padStart(2, '0');
+  return `${mm}:${ss}`;
 }
 
 export type LagReport = {
