@@ -8,6 +8,9 @@
 // POST /api/admin-reset
 // Header: x-reset-token: <matches ADMIN_RESET_TOKEN>
 import { DRIVE_ROOT_FOLDER_ID, MARKETS, SPREADSHEET_ID } from '../src/config.js';
+
+const NATIVE_MIME_PREFIX = 'application/vnd.google-apps.';
+const FOLDER_MIME = 'application/vnd.google-apps.folder';
 import { apiError, gFetch, handleError } from './_utils.js';
 import type { ApiRequest, ApiResponse } from './_utils.js';
 
@@ -46,23 +49,42 @@ async function trashFile(id: string): Promise<void> {
   if (!resp.ok) throw await apiError(`Drive trash failed for ${id}`, resp);
 }
 
-// Recursively trash everything under root. Trashing a folder trashes its
-// contents in Drive's UI, but we walk first so the count we report is real
-// and so a partial failure surfaces the exact file that broke.
-async function purgeDriveFolder(rootId: string): Promise<number> {
-  let count = 0;
+// Recursively trash uploaded videos under root. Skip:
+//   - the heatmap spreadsheet itself (lives in the same folder)
+//   - any Google-native doc/sheet/slide the SA doesn't own
+// Folders that end up empty are also trashed. Reported counts show what was
+// touched vs. skipped so a partial run is auditable.
+async function purgeDriveFolder(rootId: string): Promise<{
+  trashed: number;
+  skipped: { id: string; name: string; reason: string }[];
+}> {
+  let trashed = 0;
+  const skipped: { id: string; name: string; reason: string }[] = [];
+
   async function walk(parentId: string): Promise<void> {
     const children = await listChildren(parentId);
     for (const child of children) {
-      if (child.mimeType === 'application/vnd.google-apps.folder') {
+      if (child.id === SPREADSHEET_ID) {
+        skipped.push({ id: child.id, name: child.name, reason: 'heatmap spreadsheet' });
+        continue;
+      }
+      if (child.mimeType === FOLDER_MIME) {
         await walk(child.id);
+        await trashFile(child.id);
+        trashed += 1;
+        continue;
+      }
+      if (child.mimeType.startsWith(NATIVE_MIME_PREFIX)) {
+        skipped.push({ id: child.id, name: child.name, reason: `native ${child.mimeType}` });
+        continue;
       }
       await trashFile(child.id);
-      count += 1;
+      trashed += 1;
     }
   }
+
   await walk(rootId);
-  return count;
+  return { trashed, skipped };
 }
 
 type SheetMeta = { sheetId: number; title: string; rowCount: number };
@@ -135,12 +157,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return res.status(401).json({ error: 'Bad or missing x-reset-token' });
     }
 
-    const driveTrashed = await purgeDriveFolder(DRIVE_ROOT_FOLDER_ID);
+    const drive = await purgeDriveFolder(DRIVE_ROOT_FOLDER_ID);
     const sheetsCleared = await clearSheetDataRows();
 
     res.status(200).json({
       ok: true,
-      driveTrashed,
+      driveTrashed: drive.trashed,
+      driveSkipped: drive.skipped,
       sheetsCleared,
       note: 'Drive files are in Trash — empty it in Drive to hard-delete.',
     });
