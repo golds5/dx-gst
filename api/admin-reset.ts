@@ -122,22 +122,43 @@ async function getAllSheets(): Promise<SheetMeta[]> {
   }));
 }
 
-async function clearSheetDataRows(): Promise<{ tab: string; rowsRemoved: number }[]> {
+// Keep the grid this tall after clearing so log-slot's A2:D500 read still
+// hits a valid range. If we leave it at 1 row (header only), Sheets rejects
+// the read with "exceeds grid limits".
+const TARGET_ROW_COUNT = 1000;
+
+async function clearSheetDataRows(): Promise<{
+  tab: string;
+  rowsRemoved: number;
+  rowsRestored: number;
+}[]> {
   const wantedTabs = new Set(Object.values(MARKETS).map((m) => m.sheetTab));
   const sheets = (await getAllSheets()).filter((s) => wantedTabs.has(s.title));
 
-  const requests = sheets
-    .filter((s) => s.rowCount > 1)
-    .map((s) => ({
-      deleteDimension: {
-        range: {
-          sheetId: s.sheetId,
-          dimension: 'ROWS',
-          startIndex: 1,
-          endIndex: s.rowCount,
+  const requests: unknown[] = [];
+  for (const s of sheets) {
+    if (s.rowCount > 1) {
+      requests.push({
+        deleteDimension: {
+          range: {
+            sheetId: s.sheetId,
+            dimension: 'ROWS',
+            startIndex: 1,
+            endIndex: s.rowCount,
+          },
         },
+      });
+    }
+    // After deletion the grid is 1 row tall — append blank rows so log-slot
+    // and heatmap reads have somewhere to land.
+    requests.push({
+      appendDimension: {
+        sheetId: s.sheetId,
+        dimension: 'ROWS',
+        length: TARGET_ROW_COUNT - 1,
       },
-    }));
+    });
+  }
 
   if (requests.length > 0) {
     const resp = await gFetch(`${SHEETS_BASE}:batchUpdate`, {
@@ -151,6 +172,7 @@ async function clearSheetDataRows(): Promise<{ tab: string; rowsRemoved: number 
   return sheets.map((s) => ({
     tab: s.title,
     rowsRemoved: Math.max(0, s.rowCount - 1),
+    rowsRestored: TARGET_ROW_COUNT - 1,
   }));
 }
 
