@@ -40,13 +40,19 @@ async function listChildren(parentId: string): Promise<DriveFile[]> {
   return out;
 }
 
-async function trashFile(id: string): Promise<void> {
+async function trashFile(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const resp = await gFetch(`${DRIVE_BASE}/files/${id}?supportsAllDrives=true`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ trashed: true }),
   });
-  if (!resp.ok) throw await apiError(`Drive trash failed for ${id}`, resp);
+  if (resp.ok) return { ok: true };
+  let detail = '';
+  try {
+    const body = (await resp.json()) as { error?: { message?: string } };
+    detail = body.error?.message ?? '';
+  } catch {}
+  return { ok: false, error: `${resp.status}${detail ? `: ${detail}` : ''}` };
 }
 
 // Recursively trash uploaded videos under root. Skip:
@@ -57,9 +63,17 @@ async function trashFile(id: string): Promise<void> {
 async function purgeDriveFolder(rootId: string): Promise<{
   trashed: number;
   skipped: { id: string; name: string; reason: string }[];
+  failed: { id: string; name: string; error: string }[];
 }> {
   let trashed = 0;
   const skipped: { id: string; name: string; reason: string }[] = [];
+  const failed: { id: string; name: string; error: string }[] = [];
+
+  async function tryTrash(file: DriveFile): Promise<void> {
+    const r = await trashFile(file.id);
+    if (r.ok) trashed += 1;
+    else failed.push({ id: file.id, name: file.name, error: r.error });
+  }
 
   async function walk(parentId: string): Promise<void> {
     const children = await listChildren(parentId);
@@ -70,21 +84,19 @@ async function purgeDriveFolder(rootId: string): Promise<{
       }
       if (child.mimeType === FOLDER_MIME) {
         await walk(child.id);
-        await trashFile(child.id);
-        trashed += 1;
+        await tryTrash(child);
         continue;
       }
       if (child.mimeType.startsWith(NATIVE_MIME_PREFIX)) {
         skipped.push({ id: child.id, name: child.name, reason: `native ${child.mimeType}` });
         continue;
       }
-      await trashFile(child.id);
-      trashed += 1;
+      await tryTrash(child);
     }
   }
 
   await walk(rootId);
-  return { trashed, skipped };
+  return { trashed, skipped, failed };
 }
 
 type SheetMeta = { sheetId: number; title: string; rowCount: number };
@@ -164,8 +176,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       ok: true,
       driveTrashed: drive.trashed,
       driveSkipped: drive.skipped,
+      driveFailed: drive.failed,
       sheetsCleared,
-      note: 'Drive files are in Trash — empty it in Drive to hard-delete.',
+      note: 'Drive files are in Trash — empty it in Drive to hard-delete. Files under driveFailed need manual deletion (owned by another user).',
     });
   } catch (err) {
     handleError(res, err);
