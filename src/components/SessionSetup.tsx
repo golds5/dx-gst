@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ADMIN_PASSCODE,
   DEVICES,
+  GAME_ICONS,
   MARKETS,
   PROVIDER_ICONS,
   REGION_PASSCODES,
@@ -320,25 +321,26 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
         <>
           <div className="field">
             <span className="field-label">Your test device</span>
-            <div className="tag-row">
+            <div className="device-grid">
               {deviceOptions.map((d) => (
                 <button
                   key={d.label}
                   type="button"
-                  className={`tag${device === d.label ? ' active' : ''}`}
+                  className={`device-card${device === d.label ? ' on' : ''}`}
                   onClick={() => setDevice(d.label)}
                 >
-                  {device === d.label && '✓ '}
-                  {d.label}
-                  {d.spec && <span className="spec">{d.spec}</span>}
+                  {device === d.label && <span className="device-check">✓</span>}
+                  <span className="device-name">{d.label}</span>
+                  {d.spec && <span className="device-spec">{d.spec}</span>}
                 </button>
               ))}
               <button
                 type="button"
-                className="tag"
+                className="device-card device-add"
                 onClick={() => setAddingDevice((v) => !v)}
               >
-                ＋ Add my device
+                <span className="device-name">＋ Add my device</span>
+                <span className="device-spec">Not listed here</span>
               </button>
             </div>
           </div>
@@ -407,17 +409,21 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
                 Game under test · usually 2 games per test day
               </span>
               <div className="game-list">
-                {gamesForRegionProvider(market!, provider).map((g) => (
-                  <button
-                    key={g.game}
-                    type="button"
-                    className={`game-option${gameName === g.game ? ' on' : ''}`}
-                    onClick={() => setGameName(g.game)}
-                  >
-                    <span className="game-name">{g.game}</span>
-                    <span className="game-minbet">min {g.minBet}</span>
-                  </button>
-                ))}
+                {gamesForRegionProvider(market!, provider).map((g) => {
+                  const icon = GAME_ICONS[g.game];
+                  return (
+                    <button
+                      key={g.game}
+                      type="button"
+                      className={`game-option${gameName === g.game ? ' on' : ''}`}
+                      onClick={() => setGameName(g.game)}
+                    >
+                      {icon && <img className="game-icon" src={icon} alt="" />}
+                      <span className="game-name">{g.game}</span>
+                      <span className="game-minbet">min {g.minBet}</span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="auto-note">
                 Set the game&apos;s <b>minimum bet</b> before recording. Finish this

@@ -110,6 +110,9 @@ export const DEVICES: DeviceConfig[] = [
   { id: 'SamsungA714G', label: 'Samsung A71 4G', spec: '2020 · 6-8G RAM' },
   { id: 'OppoReno10Pro', label: 'Oppo Reno 10 Pro', spec: '2023 · 12G RAM' },
   { id: 'VivoY20S', label: 'Vivo Y20S', spec: '2020 · 4G RAM' },
+  { id: 'HonorX6c', label: 'Honor X6c', spec: '2024 · 12G RAM' },
+  { id: 'OppoA5i', label: 'Oppo A5i', spec: '2024 · 4G RAM' },
+  { id: 'RealmeC61', label: 'Realme C61', spec: '2024 · 4G RAM' },
 ];
 
 // ─── Providers & games (region-scoped) ───────────────────────────────
@@ -128,6 +131,12 @@ export const PROVIDER_ICONS: Record<string, string> = {
   Jili: '🪙',
   PP: '⚡',
   Fachai: '🐉',
+};
+
+// Optional per-game icon, keyed by game name. File lives under
+// public/game-icons/ so Vite serves it from the site root.
+export const GAME_ICONS: Record<string, string> = {
+  'Ways of the Qilin': '/game-icons/ways-of-the-qilin.png',
 };
 
 export const REGION_GAMES: Record<string, GameConfig[]> = {
