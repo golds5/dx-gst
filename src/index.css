@@ -596,10 +596,54 @@ footer{
 .admin-tab.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
 .admin-status{color:var(--muted);font-size:13px;padding:24px 0}
 
-.heatmap-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-table.heatmap{border-collapse:collapse;width:100%;font-size:12.5px}
+/* Rating legend above the records. */
+.heat-legend{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  margin:0 0 12px;font-size:11.5px;color:var(--muted);
+}
+.heat-legend>span{display:flex;align-items:center;gap:6px}
+.heat-legend-note{font-style:italic;opacity:.8}
+
+/* ── phone view: one card per logged session ──────────── */
+.heat-cards{display:flex;flex-direction:column;gap:10px}
+.heat-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:14px;box-shadow:var(--shadow-sm);
+}
+.heat-card-head{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.heat-card-date{font-size:15px;font-weight:700;color:var(--text)}
+.heat-card-week{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+  color:var(--primary);background:var(--primary-soft);
+  padding:2px 7px;border-radius:5px;margin-left:auto;flex-shrink:0;
+}
+.heat-card-meta{display:flex;flex-direction:column;gap:1px;margin-bottom:11px}
+.heat-card-game{font-size:12.5px;color:var(--text)}
+.heat-card-device{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.heat-chips{display:flex;flex-wrap:wrap;gap:6px}
+.heat-chip{
+  position:relative;padding:7px 11px;border-radius:7px;
+  border:1px solid var(--line);background:var(--panel-2);color:#1F2329;
+  font-family:inherit;font-size:12px;font-weight:600;
+}
+.heat-chip.has-note{cursor:pointer}
+.heat-chip.has-note:hover{outline:2px solid var(--primary);outline-offset:1px}
+.heat-chip:disabled{cursor:default}
+.heat-card-none{font-size:12px;color:var(--muted);font-style:italic}
+.heat-card-untested{margin-top:9px;font-size:11px;color:var(--muted)}
+
+.heatmap-scroll{
+  display:none;
+  overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);
+}
+/* Tablet and up: the grid reads better than a stack of cards. */
+@media(min-width:760px){
+  .heat-cards{display:none}
+  .heatmap-scroll{display:block}
+}
+table.heatmap{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px}
 table.heatmap th{
-  position:sticky;top:0;
+  position:sticky;top:0;z-index:2;
   background:var(--panel-2);color:var(--muted);font-weight:600;text-align:left;
   padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
   font-size:11px;letter-spacing:.02em;
@@ -608,10 +652,22 @@ table.heatmap td{
   padding:9px 12px;border-bottom:1px solid var(--line-soft);
   border-right:1px solid var(--line-soft);white-space:nowrap;position:relative;
 }
+/* Pin the Date column so a wide grid keeps its row context while scrolling. */
+table.heatmap .sticky-col{
+  position:sticky;left:0;z-index:3;background:var(--panel);
+  border-right:1px solid var(--line);
+}
+table.heatmap th.sticky-col{z-index:4;background:var(--panel-2)}
 table.heatmap td.meta-cell{font-family:'JetBrains Mono',monospace;color:var(--text)}
 table.heatmap td.brand-cell{color:#1F2329;font-weight:500}
+table.heatmap td.brand-cell.untested{color:var(--muted);opacity:.45;font-weight:400}
 table.heatmap td.has-note{cursor:pointer}
 table.heatmap td.has-note:hover{outline:2px solid var(--primary);outline-offset:-2px}
+.week-badge{
+  margin-left:8px;font-size:10px;font-weight:600;color:var(--muted);
+  background:var(--panel-2);border:1px solid var(--line-soft);
+  padding:1px 5px;border-radius:4px;
+}
 .note-dot{
   position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;
   background:var(--primary);box-shadow:0 0 0 2px rgba(255,255,255,.7);

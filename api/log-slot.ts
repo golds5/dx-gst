@@ -100,12 +100,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
             start: { sheetId, rowIndex: 1, columnIndex: 0 },
             rows: [
               {
+                // Only the four meta columns. Brand cells stay blank until a
+                // brand is actually rated, so a slot the DX lead never asked
+                // for reads as "not tested" rather than "tested, no result".
                 values: [
                   numberCell(session.weekNumber),
                   textCell(dateLabel),
                   textCell(deviceLabel),
                   textCell(gameLabel),
-                  ...marketCfg.brands.map((b) => textCell(brandCellLabel(b))),
                 ],
               },
             ],

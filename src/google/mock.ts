@@ -155,10 +155,12 @@ export const mockBackend: GoogleBackend = {
           { value: r.device, color: null, note: null },
           { value: r.game, color: null, note: null },
         ];
-        cfg.brands.forEach((b, i) => {
+        // Untested brands stay blank (matches the real sheet, which only
+        // fills a brand cell once that brand is rated).
+        cfg.brands.forEach((_, i) => {
           const c = r.cells[i];
           cells.push({
-            value: c?.label ?? brandCellLabel(b),
+            value: c?.label ?? '',
             color: c ? toCss(c.color) : null,
             note: c?.note ?? null,
           });
