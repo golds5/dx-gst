@@ -131,7 +131,7 @@ export type GameConfig = {
   minBet: string; // e.g. '0.02 PHP' (currency included)
 };
 
-// One icon per provider, used in the game picker + session header.
+// Emoji fallback per provider — used if no image icon is available.
 export const PROVIDER_ICONS: Record<string, string> = {
   'PG Soft': '🀄',
   Jili: '🪙',
@@ -139,10 +139,31 @@ export const PROVIDER_ICONS: Record<string, string> = {
   Fachai: '🐉',
 };
 
-// Optional per-game icon, keyed by game name. File lives under
-// public/game-icons/ so Vite serves it from the site root.
+// Provider logo images, keyed by provider name. Files under
+// public/provider-icons/ so Vite serves them from the site root. Falls
+// back to PROVIDER_ICONS when a provider has no image on file.
+export const PROVIDER_ICON_IMAGES: Record<string, string> = {
+  'PG Soft': '/provider-icons/pg-soft.png',
+  Jili: '/provider-icons/jili.png',
+  PP: '/provider-icons/pragmatic-play.png',
+  Fachai: '/provider-icons/fachai.png',
+};
+
+// Per-game icon, keyed by game name. File lives under public/game-icons/
+// so Vite serves it from the site root.
 export const GAME_ICONS: Record<string, string> = {
-  'Ways of the Qilin': '/game-icons/ways-of-the-qilin.png',
+  'Ways of the Qilin': '/game-icons/ways-of-the-qilin.webp',
+  'Treasures of Aztec': '/game-icons/treasures-of-aztec.webp',
+  'Mahjong Ways 2': '/game-icons/mahjong-ways-2.webp',
+  'Golden Empire': '/game-icons/golden-empire.webp',
+  'Golden Empire 2': '/game-icons/golden-empire-2.webp',
+  'Fortune Coins': '/game-icons/fortune-coins.webp',
+  'Fortune Coins 2': '/game-icons/fortune-coins-2.webp',
+  "Joker's Revenge": '/game-icons/jokers-revenge.webp',
+  'Wild Skullz': '/game-icons/wild-skullz.webp',
+  'Gates of Olympus Super Scatter': '/game-icons/gates-of-olympus-super-scatter.webp',
+  ZEUS: '/game-icons/zeus.webp',
+  'KONG ISLAND': '/game-icons/kong-island.webp',
 };
 
 export const REGION_GAMES: Record<string, GameConfig[]> = {
@@ -152,6 +173,7 @@ export const REGION_GAMES: Record<string, GameConfig[]> = {
     { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '1 THB' },
     { provider: 'Jili', game: 'Golden Empire 2', minBet: '1 THB' },
     { provider: 'Jili', game: 'Golden Empire', minBet: '1 THB' },
+    { provider: 'Jili', game: 'Fortune Coins', minBet: '1 THB' },
     { provider: 'Jili', game: 'Fortune Coins 2', minBet: '1 THB' },
     { provider: 'PP', game: "Joker's Revenge", minBet: '1 THB' },
     { provider: 'PP', game: 'Wild Skullz', minBet: '1 THB' },
@@ -165,6 +187,7 @@ export const REGION_GAMES: Record<string, GameConfig[]> = {
     { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '1 PHP' },
     { provider: 'Jili', game: 'Golden Empire 2', minBet: '1 PHP' },
     { provider: 'Jili', game: 'Golden Empire', minBet: '1 PHP' },
+    { provider: 'Jili', game: 'Fortune Coins', minBet: '1 PHP' },
     { provider: 'Jili', game: 'Fortune Coins 2', minBet: '1 PHP' },
     { provider: 'PP', game: "Joker's Revenge", minBet: '0.05 PHP' },
     { provider: 'PP', game: 'Wild Skullz', minBet: '0.02 PHP' },
@@ -178,6 +201,7 @@ export const REGION_GAMES: Record<string, GameConfig[]> = {
     { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '2 TK' },
     { provider: 'Jili', game: 'Golden Empire 2', minBet: '1 TK' },
     { provider: 'Jili', game: 'Golden Empire', minBet: '1 TK' },
+    { provider: 'Jili', game: 'Fortune Coins', minBet: '1 TK' },
     { provider: 'Jili', game: 'Fortune Coins 2', minBet: '1 TK' },
     { provider: 'PP', game: "Joker's Revenge", minBet: '0.5 TK' },
     { provider: 'PP', game: 'Wild Skullz', minBet: '0.4 TK' },
@@ -191,6 +215,7 @@ export const REGION_GAMES: Record<string, GameConfig[]> = {
     { provider: 'PG Soft', game: 'Mahjong Ways 2', minBet: '2 MXN' },
     // Jili "Golden Empire 2" is not opened in MX.
     { provider: 'Jili', game: 'Golden Empire', minBet: '2 MXN' },
+    { provider: 'Jili', game: 'Fortune Coins', minBet: '2 MXN' },
     { provider: 'Jili', game: 'Fortune Coins 2', minBet: '2 MXN' },
     { provider: 'PP', game: "Joker's Jewels Cash", minBet: '0.5 MXN' },
     { provider: 'PP', game: 'Wild Skullz', minBet: '0.6 MXN' },

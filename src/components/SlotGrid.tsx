@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MARKETS, PROVIDER_ICONS } from '../config';
+import { GAME_ICONS, MARKETS, PROVIDER_ICON_IMAGES, PROVIDER_ICONS } from '../config';
 import { formatSheetDate, pad2 } from '../lib/naming';
 import type { Session, SlotEntry } from '../types';
 import { SlotCard } from './SlotCard';
@@ -41,7 +41,16 @@ export function SlotGrid({
   return (
     <>
       <div className="page-head">
-        <div className="game-icon">{PROVIDER_ICONS[session.provider] ?? '🎰'}</div>
+        {(() => {
+          const gameSrc = GAME_ICONS[session.game];
+          const providerSrc = PROVIDER_ICON_IMAGES[session.provider];
+          if (gameSrc) return <img className="game-icon-img" src={gameSrc} alt="" />;
+          if (providerSrc)
+            return <img className="game-icon-img" src={providerSrc} alt="" />;
+          return (
+            <div className="game-icon">{PROVIDER_ICONS[session.provider] ?? '🎰'}</div>
+          );
+        })()}
         <div>
           <h1>{session.game}</h1>
           <div className="sub">

@@ -74,6 +74,14 @@ h1,.brand-name,.section-head h2,.region-code,.signin-panel h1{
 }
 
 .page-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:8px}
+.game-icon-img{
+  width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;
+  border:1px solid var(--line);background:var(--panel-2);
+}
+.provider-tag-icon{
+  width:18px;height:18px;border-radius:4px;object-fit:cover;
+  vertical-align:middle;display:inline-block;
+}
 .game-icon{
   width:52px;height:52px;border-radius:12px;flex-shrink:0;
   background:linear-gradient(135deg,#ECEAFC,#DCD7FA);

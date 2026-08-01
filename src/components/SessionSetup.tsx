@@ -4,6 +4,7 @@ import {
   DEVICES,
   GAME_ICONS,
   MARKETS,
+  PROVIDER_ICON_IMAGES,
   PROVIDER_ICONS,
   REGION_PASSCODES,
   gamesForRegionProvider,
@@ -396,7 +397,12 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
                     setGameName(null);
                   }}
                 >
-                  {PROVIDER_ICONS[p] ?? '🎰'} {p}
+                  {PROVIDER_ICON_IMAGES[p] ? (
+                    <img className="provider-tag-icon" src={PROVIDER_ICON_IMAGES[p]} alt="" />
+                  ) : (
+                    <span>{PROVIDER_ICONS[p] ?? '🎰'}</span>
+                  )}{' '}
+                  {p}
                 </button>
               ))}
             </div>
