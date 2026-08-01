@@ -313,6 +313,19 @@ function useLoginAccount(market: string, brand: string) {
   const [showPass, setShowPass] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
+  // Reset everything when the VA opens a different slot — otherwise the
+  // previous brand's credentials linger in this hook's state because
+  // SlotCard is the same component instance re-rendering with new props.
+  useEffect(() => {
+    setOpen(false);
+    setLoaded(false);
+    setLoading(false);
+    setError(null);
+    setAccount(null);
+    setShowPass(false);
+    setCopied(null);
+  }, [market, brand]);
+
   function toggle() {
     const next = !open;
     setOpen(next);
