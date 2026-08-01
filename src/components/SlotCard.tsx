@@ -29,6 +29,7 @@ type Props = {
 export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onCollapse }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { brand, status } = slot;
+  const login = useLoginAccount(market, brand.name);
   const busy = status === 'uploading';
   const done = status === 'logged';
   // Mid-pipeline the whole card is locked. A logged slot keeps its report
@@ -99,6 +100,14 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
         ) : null}
         <button
           type="button"
+          className={`login-toggle-inline${login.open ? ' on' : ''}`}
+          onClick={login.toggle}
+        >
+          🔑 Login info
+          <span className="login-caret">{login.open ? '▲' : '▼'}</span>
+        </button>
+        <button
+          type="button"
           className="collapse-btn"
           onClick={onCollapse}
           aria-label={`Collapse ${brand.name}`}
@@ -115,7 +124,7 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
         onChange={handleFile}
       />
 
-      <LoginPanel market={market} brand={brand.name} />
+      {login.open && <LoginBody state={login} />}
 
 
       <div className="card-body">
@@ -292,10 +301,10 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
   );
 }
 
-// Reveals the DX MP account for this brand. Collapsed by default so the
-// slot card stays quiet; the panel loads its data lazily on first expand
-// so we don't ping the sheet for every brand the VA never opens.
-function LoginPanel({ market, brand }: { market: string; brand: string }) {
+// Encapsulates the DX MP account fetch + reveal state. The toggle button
+// lives in the card head; the body renders below it. Data loads lazily on
+// first expand so slots the VA never opens don't ping the sheet.
+function useLoginAccount(market: string, brand: string) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -331,66 +340,73 @@ function LoginPanel({ market, brand }: { market: string; brand: string }) {
     }
   }
 
+  return {
+    open,
+    toggle,
+    loading,
+    error,
+    account,
+    brand,
+    showPass,
+    setShowPass,
+    copied,
+    copy,
+  };
+}
+
+type LoginState = ReturnType<typeof useLoginAccount>;
+
+function LoginBody({ state }: { state: LoginState }) {
+  const { loading, error, account, brand, showPass, setShowPass, copied, copy } = state;
   return (
-    <div className={`login-panel${open ? ' open' : ''}`}>
-      <button type="button" className="login-toggle" onClick={toggle}>
-        <span>🔑 Login info</span>
-        <span className="login-caret">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="login-body">
-          {loading && <div className="login-status">Loading…</div>}
-          {error && <div className="login-status err">Could not load: {error}</div>}
-          {!loading && !error && !account && (
-            <div className="login-status">
-              No DX account on file for {brand}. Ask your DX lead.
-            </div>
-          )}
-          {account && (
-            <>
-              <LoginRow
-                label="User"
-                value={account.username}
-                copied={copied === 'user'}
-                onCopy={() => copy('user', account.username)}
-              />
-              <LoginRow
-                label="Phone"
-                value={account.phone}
-                copied={copied === 'phone'}
-                onCopy={() => copy('phone', account.phone)}
-              />
-              <LoginRow
-                label="Pass"
-                value={showPass ? account.password : '•'.repeat(account.password.length || 6)}
-                copied={copied === 'pass'}
-                onCopy={() => copy('pass', account.password)}
-                extra={
-                  <button
-                    type="button"
-                    className="login-mini"
-                    onClick={() => setShowPass((v) => !v)}
-                  >
-                    {showPass ? 'hide' : 'show'}
-                  </button>
-                }
-              />
-              {account.creditRemark && (
-                <div className="login-remark">💰 {account.creditRemark}</div>
-              )}
-              {account.mpDomain && (
-                <a
-                  className="login-mp"
-                  href={`https://${account.mpDomain.replace(/^https?:\/\//, '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open {account.mpDomain} ↗
-                </a>
-              )}
-            </>
-          )}
+    <div className="login-body-standalone">
+      {loading && <div className="login-status">Loading…</div>}
+      {error && <div className="login-status err">Could not load: {error}</div>}
+      {!loading && !error && !account && (
+        <div className="login-status">
+          No DX account on file for {brand}. Ask your DX lead.
         </div>
+      )}
+      {account && (
+        <>
+          <LoginRow
+            label="User"
+            value={account.username}
+            copied={copied === 'user'}
+            onCopy={() => copy('user', account.username)}
+          />
+          <LoginRow
+            label="Phone"
+            value={account.phone}
+            copied={copied === 'phone'}
+            onCopy={() => copy('phone', account.phone)}
+          />
+          <LoginRow
+            label="Pass"
+            value={showPass ? account.password : '•'.repeat(account.password.length || 6)}
+            copied={copied === 'pass'}
+            onCopy={() => copy('pass', account.password)}
+            extra={
+              <button
+                type="button"
+                className="login-mini"
+                onClick={() => setShowPass((v) => !v)}
+              >
+                {showPass ? 'hide' : 'show'}
+              </button>
+            }
+          />
+          {account.mpDomain && (
+            <a
+              className="login-mp"
+              href={`https://${account.mpDomain.replace(/^https?:\/\//, '')}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open {account.mpDomain} ↗
+            </a>
+          )}
+        </>
       )}
     </div>
   );
