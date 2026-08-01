@@ -322,26 +322,25 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
           <div className="field">
             <span className="field-label">Your test device</span>
             <div className="device-grid">
-              {deviceOptions.map((d) => (
-                <button
-                  key={d.label}
-                  type="button"
-                  className={`device-card${device === d.label ? ' on' : ''}`}
-                  onClick={() => setDevice(d.label)}
-                >
-                  {device === d.label && <span className="device-check">✓</span>}
-                  <span className="device-name">{d.label}</span>
-                  {d.spec && <span className="device-spec">{d.spec}</span>}
-                </button>
-              ))}
               <button
                 type="button"
                 className="device-card device-add"
                 onClick={() => setAddingDevice((v) => !v)}
               >
                 <span className="device-name">＋ Add my device</span>
-                <span className="device-spec">Not listed here</span>
               </button>
+              {deviceOptions.map((d) => (
+                <button
+                  key={d.label}
+                  type="button"
+                  className={`device-card${device === d.label ? ' on' : ''}`}
+                  onClick={() => setDevice(d.label)}
+                  title={d.spec}
+                >
+                  {device === d.label && <span className="device-check">✓</span>}
+                  <span className="device-name">{d.label}</span>
+                </button>
+              ))}
             </div>
           </div>
           {addingDevice && (

@@ -112,6 +112,7 @@ export function SlotGrid({
         <div className="expanded-top">
           <SlotCard
             slot={slots[expanded]}
+            market={session.market}
             onPickFile={(f) => onPickFile(expanded, f)}
             onChange={(patch) => onChange(expanded, patch)}
             onSubmit={() => onSubmit(expanded)}

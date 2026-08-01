@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties } from 'react';
 import { LAG_PRESETS } from '../config';
+import { backend } from '../google';
+import type { DxAccount } from '../google/types';
 import {
   buildLagNotes,
   formatClockInput,
@@ -17,13 +19,14 @@ const RATING_META: { key: Rating; cls: string; dot: string; label: string }[] = 
 
 type Props = {
   slot: SlotEntry;
+  market: string;
   onChange: (patch: Partial<SlotEntry>) => void;
   onPickFile: (file: File) => void;
   onSubmit: () => void;
   onCollapse: () => void;
 };
 
-export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: Props) {
+export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onCollapse }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { brand, status } = slot;
   const busy = status === 'uploading';
@@ -111,6 +114,9 @@ export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: P
         style={{ display: 'none' }}
         onChange={handleFile}
       />
+
+      <LoginPanel market={market} brand={brand.name} />
+
 
       <div className="card-body">
         <div
@@ -282,6 +288,135 @@ export function SlotCard({ slot, onChange, onPickFile, onSubmit, onCollapse }: P
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Reveals the DX MP account for this brand. Collapsed by default so the
+// slot card stays quiet; the panel loads its data lazily on first expand
+// so we don't ping the sheet for every brand the VA never opens.
+function LoginPanel({ market, brand }: { market: string; brand: string }) {
+  const [open, setOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [account, setAccount] = useState<DxAccount | null>(null);
+  const [showPass, setShowPass] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !loaded) {
+      setLoading(true);
+      setError(null);
+      backend
+        .fetchDxAccount(market, brand)
+        .then((a) => setAccount(a))
+        .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+        .finally(() => {
+          setLoading(false);
+          setLoaded(true);
+        });
+    }
+  }
+
+  async function copy(field: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(field);
+      setTimeout(() => setCopied((c) => (c === field ? null : c)), 1200);
+    } catch {
+      // clipboard blocked — silent, the value stays visible on screen
+    }
+  }
+
+  return (
+    <div className={`login-panel${open ? ' open' : ''}`}>
+      <button type="button" className="login-toggle" onClick={toggle}>
+        <span>🔑 Login info</span>
+        <span className="login-caret">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="login-body">
+          {loading && <div className="login-status">Loading…</div>}
+          {error && <div className="login-status err">Could not load: {error}</div>}
+          {!loading && !error && !account && (
+            <div className="login-status">
+              No DX account on file for {brand}. Ask your DX lead.
+            </div>
+          )}
+          {account && (
+            <>
+              <LoginRow
+                label="User"
+                value={account.username}
+                copied={copied === 'user'}
+                onCopy={() => copy('user', account.username)}
+              />
+              <LoginRow
+                label="Phone"
+                value={account.phone}
+                copied={copied === 'phone'}
+                onCopy={() => copy('phone', account.phone)}
+              />
+              <LoginRow
+                label="Pass"
+                value={showPass ? account.password : '•'.repeat(account.password.length || 6)}
+                copied={copied === 'pass'}
+                onCopy={() => copy('pass', account.password)}
+                extra={
+                  <button
+                    type="button"
+                    className="login-mini"
+                    onClick={() => setShowPass((v) => !v)}
+                  >
+                    {showPass ? 'hide' : 'show'}
+                  </button>
+                }
+              />
+              {account.creditRemark && (
+                <div className="login-remark">💰 {account.creditRemark}</div>
+              )}
+              {account.mpDomain && (
+                <a
+                  className="login-mp"
+                  href={`https://${account.mpDomain.replace(/^https?:\/\//, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open {account.mpDomain} ↗
+                </a>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoginRow({
+  label,
+  value,
+  copied,
+  onCopy,
+  extra,
+}: {
+  label: string;
+  value: string;
+  copied: boolean;
+  onCopy: () => void;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div className="login-row">
+      <span className="login-label">{label}</span>
+      <span className="login-value">{value}</span>
+      {extra}
+      <button type="button" className="login-mini" onClick={onCopy}>
+        {copied ? 'copied' : 'copy'}
+      </button>
     </div>
   );
 }

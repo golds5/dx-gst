@@ -11,6 +11,10 @@
 // spreadsheet must be shared with the service account as Editor.
 export const SPREADSHEET_ID = '1JNK32r9TCrRCrvNAE3shcFVGbzTFwKU_LtH7RrxNIkE';
 
+// Sheet tab that holds the DX MP accounts revealed in the slot card. One
+// row per (market, brand). See /api/dx-account.ts for the column layout.
+export const DX_ACCOUNTS_TAB = 'DX Accounts';
+
 export const DRIVE_ROOT_FOLDER_ID = '1REdZ27EKPBG8TxWn_FsHS3UXQzfzMgkq';
 
 // ─── Drive folder layout ─────────────────────────────────────────────
@@ -64,11 +68,12 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇵🇭',
     sessionsPerWeek: 1,
     sheetTab: 'PH - Heatmap',
+    // Brands match the DX Accounts sheet (KZG-normalized group codes).
     brands: [
-      { group: 'PHKZ1', name: 'PHWOW', isCompetitor: false },
-      { group: 'PHKZ2', name: 'PHWINWIN', isCompetitor: false },
-      { group: 'PHBLG1', name: 'MRJILI', isCompetitor: false },
+      { group: 'PHKZG1', name: 'EZWIN', isCompetitor: false },
+      { group: 'PHKZG2', name: 'PHWINWIN', isCompetitor: false },
       { group: 'PH96G1', name: 'WINMAYA', isCompetitor: false },
+      { group: 'PHBLG1', name: 'MRJILI', isCompetitor: false },
       { group: 'CMP', name: 'LODIBET', isCompetitor: true },
       { group: 'CMP', name: 'BOSSPHP.VIP', isCompetitor: true },
     ],
@@ -79,10 +84,10 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇲🇽',
     sessionsPerWeek: 1,
     sheetTab: 'MX - Heatmap',
-    // MX checks one brand per group only.
+    // MX checks one brand per group only. Matches the DX Accounts sheet.
     brands: [
       { group: 'MXKZG1', name: 'MXWOW', isCompetitor: false },
-      { group: 'MX96G1', name: 'VAROMX', isCompetitor: false },
+      { group: 'MX96G1', name: 'OROMX', isCompetitor: false },
     ],
   },
   BD: {
@@ -91,10 +96,11 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇧🇩',
     sessionsPerWeek: 1,
     sheetTab: 'BD - Heatmap',
-    // BD checks one brand per group only.
+    // BD checks one brand per group only. Matches the DX Accounts sheet
+    // (KZG-normalized group codes).
     brands: [
-      { group: 'BDKZ1', name: 'ADDA7', isCompetitor: false },
-      { group: 'BD96G1', name: 'GOLDBD', isCompetitor: false },
+      { group: 'BDKZG1', name: 'ADDA7', isCompetitor: false },
+      { group: 'BD96G1', name: 'BDJOSS', isCompetitor: false },
     ],
   },
 };

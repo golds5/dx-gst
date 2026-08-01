@@ -12,6 +12,7 @@ import {
 } from '../lib/naming';
 import { brandCellLabel, deviceLabelFor, gameSheetLabelFor } from '../lib/labels';
 import type {
+  DxAccount,
   GoogleBackend,
   HeatmapData,
   LogSlotArgs,
@@ -50,6 +51,26 @@ declare global {
 if (typeof window !== 'undefined') window.__mockGoogle = state;
 
 const log = (...args: unknown[]) => console.log('[mock-google]', ...args);
+
+// Local-dev DX Accounts fixture. Mirrors the shape of the "DX Accounts"
+// sheet tab. Real credentials come from the sheet in production; these are
+// throwaway placeholders that let the slot-card login panel demo locally.
+const MOCK_DX_ACCOUNTS: (DxAccount & { market: string; brand: string })[] = [
+  { market: 'TH', brand: 'DEE99', username: 'dee99634e5ac768c5', phone: '0123456111', password: '1111', creditRemark: '~1000 · Hieu', mpDomain: 'www.dee99d.com' },
+  { market: 'TH', brand: 'BIG188', username: 'big1875c83c500262', phone: '0123456111', password: '1111', creditRemark: '~1000 · Hieu · need topup', mpDomain: 'www.big188.cc' },
+  { market: 'TH', brand: '789BK', username: '789kb7a98b8c4c959', phone: '0123456111', password: '1111', creditRemark: '~1000 · Hieu', mpDomain: 'www.789bkv1.net' },
+  { market: 'TH', brand: 'RM99', username: 'rm99x36643ed4a8a1', phone: '0123456111', password: '1111', creditRemark: '~1000 · Hieu', mpDomain: 'www.rm99.io' },
+  { market: 'TH', brand: 'TRU99', username: 'tru997514aaa1b5b3', phone: '0123456111', password: '1111', creditRemark: '~1000 · Hieu', mpDomain: 'www.tru99.co' },
+  { market: 'TH', brand: 'TK69', username: 'tk69x6fbe71ed774a', phone: '0123456111', password: '1111', creditRemark: '~1000 · Hieu', mpDomain: 'www.tk69b.org' },
+  { market: 'PH', brand: 'EZWIN', username: 'vatest', phone: '01234561112', password: 'Test@123456', creditRemark: '~1800 · Hieu', mpDomain: 'www.ezwinv1.com' },
+  { market: 'PH', brand: 'PHWINWIN', username: 'vatest', phone: '01234561112', password: 'Test@123456', creditRemark: '~1800 · Hieu', mpDomain: 'www.phwinwinn.com' },
+  { market: 'PH', brand: 'WINMAYA', username: 'vatest', phone: '01234561112', password: 'Test@123456', creditRemark: '~1800 · Hieu', mpDomain: 'www.winmayab.org' },
+  { market: 'PH', brand: 'MRJILI', username: 'vatest', phone: '01234561112', password: 'Test@123456', creditRemark: '~1800 · Hieu', mpDomain: 'www.mrjili.io' },
+  { market: 'MX', brand: 'MXWOW', username: 'vatest', phone: '5512345678', password: 'Test@123456', creditRemark: '~1000 · Lan', mpDomain: 'www.mxwowv1.com' },
+  { market: 'MX', brand: 'OROMX', username: 'vatest', phone: '01234561112', password: 'Test@123456', creditRemark: '~500 · Hieu', mpDomain: 'www.oromxjj.net' },
+  { market: 'BD', brand: 'ADDA7', username: 'vatest', phone: '01155536338', password: 'Test@123456', creditRemark: '~1000 · Lan', mpDomain: 'www.adda71.com' },
+  { market: 'BD', brand: 'BDJOSS', username: 'vatest', phone: '01234561112', password: 'Test@123456', creditRemark: '~1000 · Hieu', mpDomain: 'www.bdjossbg.net' },
+];
 
 export const mockBackend: GoogleBackend = {
   async prepareUpload({ session, brand, sourceFileName }: PrepareUploadArgs) {
@@ -138,6 +159,16 @@ export const mockBackend: GoogleBackend = {
     await sleep(100);
     const rows = state.tabs.get(MARKETS[market].sheetTab) ?? [];
     return rows.filter((r) => r.week === weekNumber).map((r) => r.date);
+  },
+
+  async fetchDxAccount(market: string, brand: string): Promise<DxAccount | null> {
+    await sleep(200);
+    const row = MOCK_DX_ACCOUNTS.find(
+      (a) => a.market === market && a.brand.toUpperCase() === brand.toUpperCase(),
+    );
+    if (!row) return null;
+    const { market: _m, brand: _b, ...account } = row;
+    return account;
   },
 
   async fetchHeatmap(market: string): Promise<HeatmapData> {

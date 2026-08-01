@@ -5,6 +5,7 @@
 
 import { UPLOAD_CHUNK_BYTES, UPLOAD_CHUNK_RETRIES } from '../config';
 import type {
+  DxAccount,
   GoogleBackend,
   HeatmapData,
   LogSlotArgs,
@@ -140,5 +141,12 @@ export const remoteBackend: GoogleBackend = {
   async fetchHeatmap(market: string): Promise<HeatmapData> {
     const resp = await callApi(`/api/heatmap?market=${encodeURIComponent(market)}`);
     return (await resp.json()) as HeatmapData;
+  },
+
+  async fetchDxAccount(market: string, brand: string): Promise<DxAccount | null> {
+    const resp = await callApi(
+      `/api/dx-account?market=${encodeURIComponent(market)}&brand=${encodeURIComponent(brand)}`,
+    );
+    return (await resp.json()) as DxAccount | null;
   },
 };
