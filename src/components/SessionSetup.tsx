@@ -386,23 +386,26 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
         <>
           <div className="field">
             <span className="field-label">Provider</span>
-            <div className="tag-row">
+            <div className="provider-row">
               {providersForRegion(market!).map((p) => (
                 <button
                   key={p}
                   type="button"
-                  className={`tag${provider === p ? ' active' : ''}`}
+                  className={`provider-btn${provider === p ? ' on' : ''}`}
+                  title={p}
+                  aria-label={p}
                   onClick={() => {
                     setProvider(p);
                     setGameName(null);
                   }}
                 >
                   {PROVIDER_ICON_IMAGES[p] ? (
-                    <img className="provider-tag-icon" src={PROVIDER_ICON_IMAGES[p]} alt="" />
+                    <img src={PROVIDER_ICON_IMAGES[p]} alt={p} />
                   ) : (
-                    <span>{PROVIDER_ICONS[p] ?? '🎰'}</span>
-                  )}{' '}
-                  {p}
+                    <span className="provider-btn-emoji">
+                      {PROVIDER_ICONS[p] ?? '🎰'}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
