@@ -84,10 +84,11 @@ h1,.brand-name,.section-head h2,.region-code,.signin-panel h1{
 }
 
 /* ── Provider picker: image-only tiles in the primary color ─── */
-.provider-row{display:flex;flex-wrap:wrap;gap:10px}
+.provider-row{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 .provider-btn{
   display:inline-flex;align-items:center;justify-content:center;
-  width:64px;height:56px;padding:8px;border-radius:10px;cursor:pointer;
+  flex:0 0 auto;
+  width:72px;height:32px;padding:5px 10px;border-radius:6px;cursor:pointer;
   background:var(--primary);border:1px solid var(--line);
   transition:all .18s ease;
 }
@@ -100,7 +101,7 @@ h1,.brand-name,.section-head h2,.region-code,.signin-panel h1{
   max-width:100%;max-height:100%;object-fit:contain;
   filter:brightness(0) invert(1);
 }
-.provider-btn-emoji{font-size:24px;color:#fff}
+.provider-btn-emoji{font-size:16px;color:#fff}
 .game-icon{
   width:52px;height:52px;border-radius:12px;flex-shrink:0;
   background:linear-gradient(135deg,#ECEAFC,#DCD7FA);
