@@ -114,7 +114,11 @@ h1{
   font-size:24px;font-weight:600;letter-spacing:-.015em;line-height:1.2;
 }
 .sub{color:var(--muted);font-size:13px;margin-top:4px}
-.week-chip{margin-left:auto;flex-shrink:0;text-align:right}
+.week-chip{
+  margin-left:auto;flex-shrink:0;text-align:right;
+  cursor:pointer;user-select:none;touch-action:manipulation;
+}
+.week-chip:focus-visible{outline:2px solid var(--primary);outline-offset:4px;border-radius:6px}
 .week-chip .w{
   font-size:30px;font-weight:700;letter-spacing:-.03em;
   color:var(--primary);line-height:1;

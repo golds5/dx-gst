@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { GAME_ICONS, MARKETS, PROVIDER_ICON_IMAGES, PROVIDER_ICONS } from '../config';
 import { formatSheetDate, pad2 } from '../lib/naming';
 import type { Session, SlotEntry } from '../types';
@@ -11,6 +11,7 @@ type Props = {
   onChange: (index: number, patch: Partial<SlotEntry>) => void;
   onSubmit: (index: number) => void;
   onNewSession: () => void;
+  onFullExit: () => void;
 };
 
 // Compact ticket status shown while a brand is collapsed.
@@ -32,11 +33,31 @@ export function SlotGrid({
   onChange,
   onSubmit,
   onNewSession,
+  onFullExit,
 }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
   const marketCfg = MARKETS[session.market];
   const loggedCount = slots.filter((s) => s.status === 'logged').length;
   const errorSlots = slots.filter((s) => s.status === 'error');
+
+  // Hidden triple-tap on the W## chip: three taps within 1200ms triggers a
+  // full return to region select. Lets an admin bounce between markets to
+  // check VA progress without going through Change-game → Back → Back.
+  // Uses pointerdown (fires on touch immediately, no click-delay dance)
+  // paired with touch-action:manipulation to keep the browser from eating
+  // rapid taps as a double-tap-zoom gesture.
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function onWeekTap() {
+    tapCount.current += 1;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (tapCount.current >= 3) {
+      tapCount.current = 0;
+      onFullExit();
+      return;
+    }
+    tapTimer.current = setTimeout(() => (tapCount.current = 0), 1200);
+  }
 
   return (
     <>
@@ -57,7 +78,14 @@ export function SlotGrid({
             {session.provider} · Weekly gameplay speed test · Session {session.sessionOfWeek}
           </div>
         </div>
-        <div className="week-chip">
+        <div
+          className="week-chip"
+          onPointerDown={onWeekTap}
+          title="Triple-tap to switch region"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onWeekTap()}
+        >
           <div className="w">W{pad2(session.weekNumber)}</div>
           <div className="m">
             {marketCfg.flag} {marketCfg.code} MARKET
