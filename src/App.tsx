@@ -76,6 +76,22 @@ export default function App() {
     setSlots([]);
   }
 
+  // Full exit: drop the session AND the resume state so setup restarts at
+  // step 0 (region). Triggered by the hidden triple-tap on the W## chip in
+  // SlotGrid — lets an admin jump between regions to check VA progress.
+  function fullExit() {
+    const dirty = slotsRef.current.some(
+      (s) => (s.videoFile || s.rating || s.notes || s.lagTags?.length || s.lagStart) &&
+          s.status !== 'logged',
+    );
+    if (dirty && !window.confirm('Some slots are not logged yet. Leave this session?')) {
+      return;
+    }
+    setResume(null);
+    setSession(null);
+    setSlots([]);
+  }
+
   // ── Submit pipeline (Section 4.4): sequential per slot ──────────────
   async function processSlot(index: number) {
     const currentSession = sessionRef.current;
@@ -228,6 +244,7 @@ export default function App() {
           onChange={(i, patch) => updateSlot(i, patch)}
           onSubmit={submitSlot}
           onNewSession={newSession}
+          onFullExit={fullExit}
         />
       )}
 
