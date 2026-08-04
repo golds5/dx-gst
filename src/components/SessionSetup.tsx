@@ -4,6 +4,7 @@ import {
   DEVICES,
   GAME_ICONS,
   MARKETS,
+  PASSCODE_MAX_LENGTH,
   PROVIDER_ICON_IMAGES,
   PROVIDER_ICONS,
   REGION_PASSCODES,
@@ -127,7 +128,7 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
 
   function onPassChange(raw: string) {
     // Numeric-only, max 4 characters — matches the passcode format.
-    const digits = raw.replace(/\D/g, '').slice(0, 4);
+    const digits = raw.replace(/\D/g, '').slice(0, PASSCODE_MAX_LENGTH);
     setPassInput(digits);
     setPassError(false);
     if (market && digits === REGION_PASSCODES[market]) {
@@ -239,7 +240,7 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
                   type="password"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  maxLength={4}
+                  maxLength={PASSCODE_MAX_LENGTH}
                   autoComplete="off"
                   placeholder="••••"
                   value={passInput}

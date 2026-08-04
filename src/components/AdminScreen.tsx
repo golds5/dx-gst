@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ADMIN_PASSCODE, MARKETS, SHEET_FIRST_BRAND_COL } from '../config';
+import {
+  ADMIN_PASSCODE,
+  MARKETS,
+  PASSCODE_MAX_LENGTH,
+  SHEET_FIRST_BRAND_COL,
+} from '../config';
 import { backend } from '../google';
 import type { HeatmapCell, HeatmapData } from '../google/types';
 
@@ -94,12 +99,14 @@ export function AdminScreen({ onExit }: Props) {
               type="password"
               inputMode="numeric"
               pattern="[0-9]*"
-              maxLength={4}
+              maxLength={PASSCODE_MAX_LENGTH}
               autoComplete="off"
               placeholder="••••"
               value={passInput}
               onChange={(e) => {
-                setPassInput(e.target.value.replace(/\D/g, '').slice(0, 4));
+                setPassInput(
+                  e.target.value.replace(/\D/g, '').slice(0, PASSCODE_MAX_LENGTH),
+                );
                 setPassError(false);
               }}
               onKeyDown={(e) => e.key === 'Enter' && submitPasscode()}

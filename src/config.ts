@@ -252,19 +252,25 @@ export function findGame(
 // Gate for the read-only heatmap viewer. Client-side soft gate (ships in
 // the bundle) — treat as team friction, not real security.
 // TODO: change before rollout.
-export const ADMIN_PASSCODE = '1345';
+export const ADMIN_PASSCODE = '346789';
 
 // ─── Region passcodes ────────────────────────────────────────────────
 // Soft gate: a tester must enter the region's code before opening a session
 // for it (the browser then remembers it). NOTE: these ship in the app bundle,
 // so treat this as team-level friction, not real security.
-// TODO: change these before rollout.
 export const REGION_PASSCODES: Record<string, string> = {
-  TH: '1111',
-  PH: '2222',
-  MX: '3333',
-  BD: '4444',
+  TH: '1244',
+  PH: '2233',
+  MX: '6612',
+  BD: '9451',
 };
+
+// Longest passcode we accept in the setup input. Admin is 6 digits, region
+// is 4 — take the max so a single input can hold either.
+export const PASSCODE_MAX_LENGTH = Math.max(
+  ADMIN_PASSCODE.length,
+  ...Object.values(REGION_PASSCODES).map((c) => c.length),
+);
 
 // ─── Lag report presets ──────────────────────────────────────────────
 // Quick-pick issue types shown when rating is Slight or Strong lag.

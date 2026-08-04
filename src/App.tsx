@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MARKETS } from './config';
+import { ADMIN_PASSCODE, MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
 import { buildLagNotes, pad2 } from './lib/naming';
 import type { Session, SlotEntry } from './types';
@@ -216,7 +216,7 @@ export default function App() {
           onStart={startSession}
           initial={resume}
           onAdmin={() => {
-            localStorage.setItem('dxgst.admin', '1345');
+            localStorage.setItem('dxgst.admin', ADMIN_PASSCODE);
             setAdminView(true);
           }}
         />
