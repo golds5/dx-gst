@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Lucky Haircut Calendar</title>
+    <meta name="description" content="Pick your haircut dates from BaZi, the Chinese almanac, numerology and the moon." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9C%82%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1><span aria-hidden="true">✂</span> Lucky Haircut</h1>
+      <button type="button" id="edit-profile" class="ghost" hidden>Edit details</button>
+    </header>
+
+    <main>
+      <section id="setup" class="card">
+        <h2>Your details</h2>
+        <p class="muted">
+          Everything is computed on your device from your birth data — no account, no upload.
+        </p>
+        <form id="profile-form">
+          <div class="grid">
+            <label>
+              Full name
+              <input name="fullName" type="text" autocomplete="name" placeholder="Nguyen Van A" required />
+              <small>Used for your Destiny and Soul Urge numbers.</small>
+            </label>
+            <label>
+              Nickname
+              <input name="nickname" type="text" placeholder="Andy" />
+              <small>The name people actually call you — drives the nickname number.</small>
+            </label>
+            <label>
+              Date of birth
+              <input name="birthDate" type="date" required />
+            </label>
+            <label>
+              Birth time
+              <input name="birthTime" type="time" value="12:00" />
+              <small>
+                <label class="inline"><input type="checkbox" name="hourUnknown" /> I don’t know my birth hour</label>
+              </small>
+            </label>
+            <label>
+              Birth timezone (UTC offset)
+              <select name="birthTz"></select>
+              <small>The offset where you were born — it decides the hour pillar.</small>
+            </label>
+            <label>
+              Gender
+              <select name="gender">
+                <option value="unspecified">Prefer not to say</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+              </select>
+            </label>
+          </div>
+
+          <h3>What do you want from the cut?</h3>
+          <div class="grid">
+            <label>
+              Goal
+              <select name="goal" id="goal"></select>
+            </label>
+            <label>
+              Your timezone now
+              <select name="tz"></select>
+            </label>
+            <label>
+              From
+              <input name="from" type="date" required />
+            </label>
+            <label>
+              To
+              <input name="to" type="date" required />
+            </label>
+          </div>
+
+          <fieldset class="days">
+            <legend>Days you can actually go</legend>
+            <div id="weekday-toggles" class="chips"></div>
+          </fieldset>
+
+          <div class="actions">
+            <button type="submit" class="primary">Find my lucky days</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="results" hidden>
+        <div class="card profile-summary">
+          <h2 id="summary-title">Your chart</h2>
+          <div id="pillars" class="pillars"></div>
+          <div id="chart-notes" class="notes"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h2>Best dates</h2>
+            <div class="filters">
+              <label class="inline">
+                Show
+                <select id="band-filter">
+                  <option value="all">every day</option>
+                  <option value="good" selected>good days and better</option>
+                  <option value="excellent">excellent days only</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <ol id="top-list" class="top-list"></ol>
+          <div class="actions">
+            <button type="button" id="export-ics" class="primary">Download .ics</button>
+            <span class="muted" id="export-note"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h2 id="month-title">Calendar</h2>
+            <div class="month-nav">
+              <button type="button" id="prev-month" class="ghost" aria-label="Previous month">‹</button>
+              <button type="button" id="next-month" class="ghost" aria-label="Next month">›</button>
+            </div>
+          </div>
+          <div class="weekday-head" id="weekday-head"></div>
+          <div id="calendar" class="calendar"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="day-dialog">
+      <article>
+        <header>
+          <h2 id="dialog-title"></h2>
+          <button type="button" id="dialog-close" class="ghost" aria-label="Close">✕</button>
+        </header>
+        <div id="dialog-body"></div>
+        <footer>
+          <a id="dialog-gcal" class="primary button" target="_blank" rel="noreferrer noopener">Add to Google Calendar</a>
+          <button type="button" id="dialog-ics" class="ghost">Download this day</button>
+        </footer>
+      </article>
+    </dialog>
+
+    <footer class="fineprint">
+      <p>
+        Traditional guidance from BaZi, the Tong Shu almanac, Pythagorean numerology and lunar
+        astrology. Enjoy it as folklore, not as advice.
+      </p>
+    </footer>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

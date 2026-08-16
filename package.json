@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "haircut": "vite --config lucky-haircut/vite.config.js",
+    "haircut:build": "vite build --config lucky-haircut/vite.config.js",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",

@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Lucky Haircut app build output
+dist-lucky-haircut
