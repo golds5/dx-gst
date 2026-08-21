@@ -63,7 +63,9 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
   const [newDeviceSpec, setNewDeviceSpec] = useState('');
   const [provider, setProvider] = useState<string | null>(initial?.provider ?? null);
   const [gameName, setGameName] = useState<string | null>(initial?.game ?? null);
-  const [sessionOfWeek, setSessionOfWeek] = useState<1 | 2>(initial?.sessionOfWeek ?? 1);
+  const [sessionOfWeek, setSessionOfWeek] = useState<1 | 2 | 3>(
+    initial?.sessionOfWeek ?? 1,
+  );
   const [autoSuggested, setAutoSuggested] = useState(false);
 
   const marketCfg = market ? MARKETS[market] : null;
@@ -82,7 +84,13 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
       .weekDates({ market, weekNumber })
       .then((dates) => {
         if (!cancelled) {
-          setSessionOfWeek(suggestSessionOfWeek(dates, formatSheetDate(testDate)));
+          setSessionOfWeek(
+            suggestSessionOfWeek(
+              dates,
+              formatSheetDate(testDate),
+              marketCfg.sessionsPerWeek,
+            ),
+          );
           setAutoSuggested(true);
         }
       })
@@ -268,7 +276,12 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
           <div className="field">
             <label className="field-label" htmlFor="date">
               Test date · {marketCfg.flag} {marketCfg.code} tests{' '}
-              {marketCfg.sessionsPerWeek === 2 ? 'twice' : 'once'} a week
+              {marketCfg.sessionsPerWeek === 1
+                ? 'once'
+                : marketCfg.sessionsPerWeek === 2
+                  ? 'twice'
+                  : '3 times'}{' '}
+              a week
             </label>
             <input
               id="date"
@@ -285,11 +298,14 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
               }}
             />
           </div>
-          {marketCfg.sessionsPerWeek === 2 && (
+          {marketCfg.sessionsPerWeek > 1 && (
             <div className="field">
               <span className="field-label">Test day of this week</span>
               <div className="seg">
-                {([1, 2] as const).map((n) => (
+                {(Array.from(
+                  { length: marketCfg.sessionsPerWeek },
+                  (_, i) => (i + 1) as 1 | 2 | 3,
+                )).map((n) => (
                   <button
                     key={n}
                     type="button"

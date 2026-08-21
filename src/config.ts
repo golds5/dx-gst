@@ -36,7 +36,7 @@ export type MarketConfig = {
   code: string;
   label: string;
   flag: string;
-  sessionsPerWeek: 1 | 2;
+  sessionsPerWeek: 1 | 2 | 3;
   sheetTab: string; // tab name in the heatmap spreadsheet
   brands: BrandConfig[]; // order = Sheet column order (E→M)
 };
@@ -46,7 +46,8 @@ export const MARKETS: Record<string, MarketConfig> = {
     code: 'TH',
     label: 'THB Market',
     flag: '🇹🇭',
-    sessionsPerWeek: 2,
+    // Bumped from 2 to 3 to add an extra test day for red-signal weeks.
+    sessionsPerWeek: 3,
     sheetTab: 'TH - Heatmap',
     brands: [
       { group: 'KZG1', name: 'DEE99', isCompetitor: false },

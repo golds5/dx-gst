@@ -113,8 +113,8 @@ export function formatSheetDate(dateStr: string): string {
 export function suggestSessionOfWeek(
   loggedDates: string[], // column-B strings, e.g. 'Wed, 24/06'
   chosenDate: string, // same format
-  max: 1 | 2 = 2,
-): 1 | 2 {
+  max: 1 | 2 | 3 = 2,
+): 1 | 2 | 3 {
   const dayKey = (s: string) => {
     const m = /(\d{1,2})\/(\d{1,2})/.exec(s);
     return m ? Number(m[2]) * 100 + Number(m[1]) : 0; // MM*100+DD, sortable
@@ -122,7 +122,7 @@ export function suggestSessionOfWeek(
   const distinct = [...new Set(loggedDates)].sort((a, b) => dayKey(a) - dayKey(b));
   const idx = distinct.indexOf(chosenDate);
   const suggested = idx !== -1 ? idx + 1 : distinct.length + 1;
-  return Math.min(suggested, max) as 1 | 2;
+  return Math.min(suggested, max) as 1 | 2 | 3;
 }
 
 // ── Lag report (required when rating is slight/strong) ───────────────

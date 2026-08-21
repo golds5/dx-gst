@@ -4,7 +4,7 @@ export type Rating = 'smooth' | 'slight' | 'strong';
 
 export type Session = {
   market: string; // key into MARKETS
-  sessionOfWeek: 1 | 2;
+  sessionOfWeek: 1 | 2 | 3;
   isoYear: number;
   weekNumber: number;
   testDate: string; // YYYY-MM-DD
