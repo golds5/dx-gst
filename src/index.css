@@ -686,6 +686,20 @@ footer{
 .admin-tab.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
 .admin-status{color:var(--muted);font-size:13px;padding:24px 0}
 
+/* Refresh button sits at the end of the market tabs row. */
+.admin-refresh{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:8px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-family:inherit;font-size:13px;font-weight:600;
+  transition:all .18s ease;
+}
+.admin-refresh:hover:not(:disabled){border-color:var(--primary-border);color:var(--primary)}
+.admin-refresh:disabled{cursor:default;opacity:.55}
+.admin-refresh-label{font-size:12px}
+.admin-refresh .spin{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
 /* Toggle between VA and DX views on the admin page. */
 .mode-toggle{
   display:inline-flex;gap:4px;padding:4px;margin:0 0 12px;

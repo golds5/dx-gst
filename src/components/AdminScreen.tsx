@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BrandConfig } from '../config';
 import {
   ADMIN_PASSCODE,
@@ -83,14 +83,21 @@ export function AdminScreen({ onExit }: Props) {
     null,
   );
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  // Track whether market changed since last fetch — controls whether we clear
+  // the screen (market swap) or keep old data on-screen (manual refresh).
+  const lastMarketRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!unlocked) return;
     let cancelled = false;
+    if (lastMarketRef.current !== market) {
+      setData(null);
+      setDxData(null);
+    }
+    lastMarketRef.current = market;
     setLoading(true);
     setError(null);
-    setData(null);
-    setDxData(null);
     Promise.all([backend.fetchHeatmap(market), backend.fetchDxRateHeatmap(market)])
       .then(([va, dx]) => {
         if (cancelled) return;
@@ -102,7 +109,7 @@ export function AdminScreen({ onExit }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [unlocked, market]);
+  }, [unlocked, market, refreshTick]);
 
   const brandCols = useMemo(() => {
     const cfg = MARKETS[market];
@@ -268,11 +275,22 @@ export function AdminScreen({ onExit }: Props) {
             {m.flag} {m.code}
           </button>
         ))}
+        <button
+          type="button"
+          className="admin-refresh"
+          onClick={() => setRefreshTick((n) => n + 1)}
+          disabled={loading}
+          title="Refetch VA + DX tabs from the sheet"
+          aria-label="Refresh"
+        >
+          <span className={loading ? 'spin' : ''}>↻</span>
+          <span className="admin-refresh-label">Refresh</span>
+        </button>
       </div>
 
-      {loading && <div className="admin-status">Loading {market} heatmap…</div>}
+      {loading && !data && <div className="admin-status">Loading {market} heatmap…</div>}
       {error && <div className="invalid-msg">{error}</div>}
-      {data && !loading && (
+      {data && (
         <>
           {data.rows.length === 0 ? (
             <div className="admin-status">No records logged yet for {market}.</div>
