@@ -58,6 +58,8 @@ h1,.brand-name,.section-head h2,.region-code,.signin-panel h1{
 /* Mobile-focused: the whole app is a single phone-width column, centered.
    No desktop multi-column layout — one design that reads well on phones. */
 .page{max-width:480px;margin:0 auto;padding:20px 16px 96px;min-height:100dvh}
+/* Admin heatmap needs breathing room for its 9-brand grid on desktop. */
+.page.page-wide{max-width:min(1400px, 96vw);padding:20px 24px 96px}
 
 /* ── breadcrumb / header ─────────────────────────────── */
 .breadcrumb{

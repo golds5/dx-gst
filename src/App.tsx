@@ -193,7 +193,7 @@ export default function App() {
   const week = session ? `W${pad2(session.weekNumber)}` : '';
 
   return (
-    <div className="page">
+    <div className={`page${adminView ? ' page-wide' : ''}`}>
       <div className="breadcrumb">
         S5TECH <span className="sep">/</span> DX-GST <span className="sep">/</span> WEEKLY
         GAME SPEED TEST
