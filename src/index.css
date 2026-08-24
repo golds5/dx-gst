@@ -686,6 +686,20 @@ footer{
 .admin-tab.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
 .admin-status{color:var(--muted);font-size:13px;padding:24px 0}
 
+/* Toggle between VA and DX views on the admin page. */
+.mode-toggle{
+  display:inline-flex;gap:4px;padding:4px;margin:0 0 12px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+}
+.mode-btn{
+  padding:7px 16px;border-radius:7px;cursor:pointer;
+  background:transparent;border:0;color:var(--muted);
+  font-family:inherit;font-size:12.5px;font-weight:600;
+  transition:all .18s ease;
+}
+.mode-btn:hover{color:var(--text)}
+.mode-btn.on{background:var(--primary);color:#fff;box-shadow:0 1px 3px rgba(62,47,224,.25)}
+
 /* Two stacked tables on the admin page: VA (read-only) + DX (editable). */
 .heat-section{margin-top:16px}
 .heat-section:first-of-type{margin-top:6px}

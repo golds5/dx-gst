@@ -74,6 +74,7 @@ export function AdminScreen({ onExit }: Props) {
   const [passInput, setPassInput] = useState('');
   const [passError, setPassError] = useState(false);
   const [market, setMarket] = useState(Object.keys(MARKETS)[0]);
+  const [mode, setMode] = useState<'va' | 'dx'>('va');
   const [data, setData] = useState<HeatmapData | null>(null);
   const [dxData, setDxData] = useState<HeatmapData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -290,42 +291,64 @@ export function AdminScreen({ onExit }: Props) {
                 <span className="heat-legend-note">Blank = not tested</span>
               </div>
 
-              <HeatmapSection
-                title="VA / CS rate"
-                subtitle="What testers logged this week (read-only)."
-                rows={data.rows}
-                brandCols={brandCols}
-                onCellClick={(row, col) => {
-                  const cell = row[col.index];
-                  if (cell?.note) setOpenNote({ cell, label: col.label });
-                }}
-                editable={false}
-              />
+              <div className="mode-toggle" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === 'va'}
+                  className={`mode-btn${mode === 'va' ? ' on' : ''}`}
+                  onClick={() => setMode('va')}
+                >
+                  VA / CS rate
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === 'dx'}
+                  className={`mode-btn${mode === 'dx' ? ' on' : ''}`}
+                  onClick={() => setMode('dx')}
+                >
+                  DX rate
+                </button>
+              </div>
 
-              <HeatmapSection
-                title="DX rate"
-                subtitle="Tap a cell to cycle Smooth → Slight → Strong → blank. Only affects this table."
-                rows={data.rows.map((va) => {
-                  // For DX rendering, prefer the DX row aligned to this VA
-                  // row; when none exists yet, fall back to the VA's meta
-                  // columns + empty brand cells (so the row still shows).
-                  const key = rowKey(va);
-                  const dxRow = dxByKey.get(key);
-                  if (dxRow) return dxRow;
-                  return va.map((c, i) =>
-                    i < SHEET_FIRST_BRAND_COL
-                      ? c
-                      : { value: '', color: null, note: null },
-                  );
-                })}
-                brandCols={brandCols}
-                onCellClick={(row, col) => {
-                  const key = rowKey(row);
-                  const vaRow = data.rows.find((r) => rowKey(r) === key) ?? row;
-                  cycleDxCell(vaRow, col);
-                }}
-                editable={true}
-              />
+              {mode === 'va' && (
+                <HeatmapSection
+                  title="VA / CS rate"
+                  subtitle="What testers logged this week (read-only)."
+                  rows={data.rows}
+                  brandCols={brandCols}
+                  onCellClick={(row, col) => {
+                    const cell = row[col.index];
+                    if (cell?.note) setOpenNote({ cell, label: col.label });
+                  }}
+                  editable={false}
+                />
+              )}
+
+              {mode === 'dx' && (
+                <HeatmapSection
+                  title="DX rate"
+                  subtitle="Tap a cell to cycle Smooth → Slight → Strong → blank. Only affects this table."
+                  rows={data.rows.map((va) => {
+                    const key = rowKey(va);
+                    const dxRow = dxByKey.get(key);
+                    if (dxRow) return dxRow;
+                    return va.map((c, i) =>
+                      i < SHEET_FIRST_BRAND_COL
+                        ? c
+                        : { value: '', color: null, note: null },
+                    );
+                  })}
+                  brandCols={brandCols}
+                  onCellClick={(row, col) => {
+                    const key = rowKey(row);
+                    const vaRow = data.rows.find((r) => rowKey(r) === key) ?? row;
+                    cycleDxCell(vaRow, col);
+                  }}
+                  editable={true}
+                />
+              )}
 
               {saveError && (
                 <div className="invalid-msg" style={{ marginTop: 8 }}>
