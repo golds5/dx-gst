@@ -74,7 +74,7 @@ export function AdminScreen({ onExit }: Props) {
   const [passInput, setPassInput] = useState('');
   const [passError, setPassError] = useState(false);
   const [market, setMarket] = useState(Object.keys(MARKETS)[0]);
-  const [mode, setMode] = useState<'va' | 'dx'>('va');
+  const [mode, setMode] = useState<'va' | 'dx'>('dx');
   const [data, setData] = useState<HeatmapData | null>(null);
   const [dxData, setDxData] = useState<HeatmapData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -295,20 +295,20 @@ export function AdminScreen({ onExit }: Props) {
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={mode === 'va'}
-                  className={`mode-btn${mode === 'va' ? ' on' : ''}`}
-                  onClick={() => setMode('va')}
-                >
-                  VA / CS rate
-                </button>
-                <button
-                  type="button"
-                  role="tab"
                   aria-selected={mode === 'dx'}
                   className={`mode-btn${mode === 'dx' ? ' on' : ''}`}
                   onClick={() => setMode('dx')}
                 >
                   DX rate
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === 'va'}
+                  className={`mode-btn${mode === 'va' ? ' on' : ''}`}
+                  onClick={() => setMode('va')}
+                >
+                  VA / CS rate
                 </button>
               </div>
 
