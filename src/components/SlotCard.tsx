@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, CSSProperties } from 'react';
 import { LAG_PRESETS } from '../config';
 import { backend } from '../google';
@@ -27,7 +27,6 @@ type Props = {
 };
 
 export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onCollapse }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const { brand, status } = slot;
   const login = useLoginAccount(market, brand.name);
   const busy = status === 'uploading';
@@ -65,10 +64,6 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
     const file = e.target.files?.[0];
     if (file) onPickFile(file);
     e.target.value = ''; // allow re-picking the same file
-  }
-
-  function openPicker() {
-    if (!pipelineBusy) inputRef.current?.click();
   }
 
   function toggleTag(tag: string) {
@@ -116,11 +111,19 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
         </button>
       </div>
 
+      {/*
+        File input is associated to the label below via htmlFor. Native
+        label→input activation is more reliable across Android WebViews
+        (including Lark's in-app browser) than a programmatic .click().
+        `accept` lists common video extensions in addition to video/* —
+        some Android pickers hide files whose MIME they can't detect.
+      */}
       <input
-        ref={inputRef}
+        id={`slot-file-${brand.group}-${brand.name}`}
         type="file"
-        accept="video/*"
-        style={{ display: 'none' }}
+        accept="video/*,.mp4,.mov,.mkv,.webm,.m4v,.3gp"
+        disabled={pipelineBusy}
+        className="slot-file-input"
         onChange={handleFile}
       />
 
@@ -128,13 +131,10 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
 
 
       <div className="card-body">
-        <div
+        <label
           className={`slot${slot.videoFile ? ' filled' : ''}${pipelineBusy ? ' busy' : ''}`}
-          role="button"
-          tabIndex={0}
+          htmlFor={`slot-file-${brand.group}-${brand.name}`}
           aria-label={`Upload screen recording for ${brand.name}`}
-          onClick={openPicker}
-          onKeyDown={(e) => e.key === 'Enter' && openPicker()}
         >
           {previewUrl ? (
             <>
@@ -188,7 +188,7 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
               <span className="fmt">MP4 / MOV · PORTRAIT</span>
             </>
           )}
-        </div>
+        </label>
 
         <div className="controls">
           <div>

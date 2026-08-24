@@ -335,6 +335,14 @@ a.drive:hover{border-bottom-style:solid}
 .status-chip.err{color:var(--red);background:var(--red-soft);border:1px solid rgba(245,74,69,.4)}
 .status-chip.busy{color:var(--amber);background:var(--amber-soft);border:1px solid rgba(255,136,0,.4)}
 
+/* Visually hidden file input — kept in the layout so mobile WebViews can
+   still trigger it via the associated <label>. display:none breaks that
+   on some Android browsers. */
+.slot-file-input{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
 /* ── phone-frame upload slot ─────────────────────────── */
 .slot{
   aspect-ratio:9/17;
