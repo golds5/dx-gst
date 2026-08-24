@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ADMIN_PASSCODE, MARKETS } from './config';
+import { ADMIN_PASSCODE, ADMIN_PASSCODE_READONLY, MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
 import { buildLagNotes, pad2 } from './lib/naming';
 import type { Session, SlotEntry } from './types';
@@ -215,8 +215,11 @@ export default function App() {
         <SessionSetup
           onStart={startSession}
           initial={resume}
-          onAdmin={() => {
-            localStorage.setItem('dxgst.admin', ADMIN_PASSCODE);
+          onAdmin={(role) => {
+            localStorage.setItem(
+              'dxgst.admin',
+              role === 'edit' ? ADMIN_PASSCODE : ADMIN_PASSCODE_READONLY,
+            );
             setAdminView(true);
           }}
         />

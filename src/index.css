@@ -686,6 +686,13 @@ footer{
 .admin-tab.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
 .admin-status{color:var(--muted);font-size:13px;padding:24px 0}
 
+.role-badge{
+  display:inline-block;margin-left:10px;padding:3px 9px;border-radius:9999px;
+  background:var(--panel-2);border:1px solid var(--line);
+  font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.03em;
+  text-transform:uppercase;vertical-align:middle;
+}
+
 /* Refresh button sits at the end of the market tabs row. */
 .admin-refresh{
   margin-left:auto;display:inline-flex;align-items:center;gap:6px;

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { BrandConfig } from '../config';
+import type { AdminRole, BrandConfig } from '../config';
 import {
-  ADMIN_PASSCODE,
   MARKETS,
   PASSCODE_MAX_LENGTH,
   RATING_COLORS,
   SHEET_FIRST_BRAND_COL,
+  adminRoleFor,
 } from '../config';
 import { backend } from '../google';
 import type { HeatmapCell, HeatmapData } from '../google/types';
@@ -68,9 +68,11 @@ function rowKey(row: HeatmapCell[]): string {
 type Props = { onExit: () => void };
 
 export function AdminScreen({ onExit }: Props) {
-  const [unlocked, setUnlocked] = useState(
-    () => localStorage.getItem(ADMIN_KEY) === ADMIN_PASSCODE,
+  const [role, setRole] = useState<AdminRole | null>(
+    () => adminRoleFor(localStorage.getItem(ADMIN_KEY)),
   );
+  const unlocked = role !== null;
+  const canEdit = role === 'edit';
   const [passInput, setPassInput] = useState('');
   const [passError, setPassError] = useState(false);
   const [market, setMarket] = useState(Object.keys(MARKETS)[0]);
@@ -134,6 +136,8 @@ export function AdminScreen({ onExit }: Props) {
     row: HeatmapCell[],
     col: (typeof brandCols)[number],
   ) {
+    // Read-only admins can view the DX table but not touch it.
+    if (!canEdit) return;
     if (!data || !dxData) return;
     const cfg = MARKETS[market];
     if (!cfg) return;
@@ -200,9 +204,11 @@ export function AdminScreen({ onExit }: Props) {
   }
 
   function submitPasscode() {
-    if (passInput.trim() === ADMIN_PASSCODE) {
-      localStorage.setItem(ADMIN_KEY, passInput.trim());
-      setUnlocked(true);
+    const value = passInput.trim();
+    const nextRole = adminRoleFor(value);
+    if (nextRole) {
+      localStorage.setItem(ADMIN_KEY, value);
+      setRole(nextRole);
       setPassError(false);
     } else {
       setPassError(true);
@@ -257,9 +263,14 @@ export function AdminScreen({ onExit }: Props) {
     <>
       <div className="page-head">
         <div>
-          <h1 style={{ fontSize: 24 }}>Heatmap records</h1>
+          <h1 style={{ fontSize: 24 }}>
+            Heatmap records
+            {role === 'view' && <span className="role-badge">Read-only</span>}
+          </h1>
           <div className="sub">
-            VA / CS ratings (read-only) and DX rerates (tap a cell to cycle).
+            {canEdit
+              ? 'VA / CS ratings (read-only) and DX rerates (tap a cell to cycle).'
+              : 'Viewing both VA / CS ratings and DX rerates. Editing disabled.'}
           </div>
         </div>
       </div>
@@ -347,7 +358,11 @@ export function AdminScreen({ onExit }: Props) {
               {mode === 'dx' && (
                 <HeatmapSection
                   title="DX rate"
-                  subtitle="Tap a cell to cycle Smooth → Slight → Strong → blank. Only affects this table."
+                  subtitle={
+                    canEdit
+                      ? 'Tap a cell to cycle Smooth → Slight → Strong → blank. Only affects this table.'
+                      : 'Read-only view of the DX rerates. Sign in as admin (edit) to change ratings.'
+                  }
                   rows={data.rows.map((va) => {
                     const key = rowKey(va);
                     const dxRow = dxByKey.get(key);
@@ -364,7 +379,7 @@ export function AdminScreen({ onExit }: Props) {
                     const vaRow = data.rows.find((r) => rowKey(r) === key) ?? row;
                     cycleDxCell(vaRow, col);
                   }}
-                  editable={true}
+                  editable={canEdit}
                 />
               )}
 

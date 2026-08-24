@@ -260,6 +260,10 @@ export function findGame(
 // TODO: change before rollout.
 export const ADMIN_PASSCODE = '346789';
 
+// Read-only admin ("admin-02"): can view both VA/CS rate and DX rate tables
+// but cannot edit the DX rate cells. Same server data, gated on the client.
+export const ADMIN_PASSCODE_READONLY = '34678911';
+
 // ─── Region passcodes ────────────────────────────────────────────────
 // Soft gate: a tester must enter the region's code before opening a session
 // for it (the browser then remembers it). NOTE: these ship in the app bundle,
@@ -271,12 +275,21 @@ export const REGION_PASSCODES: Record<string, string> = {
   BD: '9451',
 };
 
-// Longest passcode we accept in the setup input. Admin is 6 digits, region
-// is 4 — take the max so a single input can hold either.
+// Longest passcode we accept in the setup input. Admin codes and region
+// codes have different lengths — take the max so a single input holds any.
 export const PASSCODE_MAX_LENGTH = Math.max(
   ADMIN_PASSCODE.length,
+  ADMIN_PASSCODE_READONLY.length,
   ...Object.values(REGION_PASSCODES).map((c) => c.length),
 );
+
+// Which admin role a stored passcode grants (null = not authenticated).
+export type AdminRole = 'edit' | 'view';
+export function adminRoleFor(passcode: string | null | undefined): AdminRole | null {
+  if (passcode === ADMIN_PASSCODE) return 'edit';
+  if (passcode === ADMIN_PASSCODE_READONLY) return 'view';
+  return null;
+}
 
 // ─── Lag report presets ──────────────────────────────────────────────
 // Quick-pick issue types shown when rating is Slight or Strong lag.

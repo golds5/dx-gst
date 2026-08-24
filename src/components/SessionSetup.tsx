@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ADMIN_PASSCODE,
+  ADMIN_PASSCODE_READONLY,
   DEVICES,
   GAME_ICONS,
   MARKETS,
@@ -19,6 +20,7 @@ import {
   suggestSessionOfWeek,
 } from '../lib/naming';
 import { backend } from '../google';
+import type { AdminRole } from '../config';
 import type { Session } from '../types';
 
 function todayLocalISO(): string {
@@ -44,7 +46,7 @@ function storedDevices(): CustomDevice[] {
 type Props = {
   onStart: (session: Session) => void;
   initial?: Session | null;
-  onAdmin?: () => void;
+  onAdmin?: (role: AdminRole) => void;
 };
 
 export function SessionSetup({ onStart, initial, onAdmin }: Props) {
@@ -128,7 +130,11 @@ export function SessionSetup({ onStart, initial, onAdmin }: Props) {
     } else if (value === ADMIN_PASSCODE && onAdmin) {
       setPassError(false);
       setPassInput('');
-      onAdmin();
+      onAdmin('edit');
+    } else if (value === ADMIN_PASSCODE_READONLY && onAdmin) {
+      setPassError(false);
+      setPassInput('');
+      onAdmin('view');
     } else {
       setPassError(true);
     }
