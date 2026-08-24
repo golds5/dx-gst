@@ -3,7 +3,7 @@
 // heatmap row find-or-create, per-slot cell updates. State is inspectable at
 // window.__mockGoogle and every action is logged to the console.
 
-import { MARKETS, RATING_COLORS } from '../config';
+import { MARKETS, RATING_COLORS, SHEET_FIRST_BRAND_COL } from '../config';
 import {
   buildFolderPath,
   buildVideoFilename,
@@ -17,6 +17,7 @@ import type {
   HeatmapData,
   LogSlotArgs,
   PrepareUploadArgs,
+  SetDxRateArgs,
   UploadArgs,
 } from './types';
 
@@ -199,5 +200,73 @@ export const mockBackend: GoogleBackend = {
         return cells;
       }),
     };
+  },
+
+  async fetchDxRateHeatmap(market: string): Promise<HeatmapData> {
+    await sleep(200);
+    const cfg = MARKETS[market];
+    const rows = state.tabs.get(cfg.sheetTabDx) ?? [];
+    const headers = ['Week', 'Date', 'Device', 'Game', ...cfg.brands.map(brandCellLabel)];
+    return {
+      title: cfg.sheetTabDx,
+      headers,
+      rows: rows.map((r) => {
+        const cells: HeatmapData['rows'][number] = [
+          { value: String(r.week), color: null, note: null },
+          { value: r.date, color: null, note: null },
+          { value: r.device, color: null, note: null },
+          { value: r.game, color: null, note: null },
+        ];
+        cfg.brands.forEach((_, i) => {
+          const c = r.cells[i];
+          cells.push({
+            value: c?.label ?? '',
+            color: c ? toCss(c.color) : null,
+            note: c?.note ?? null,
+          });
+        });
+        return cells;
+      }),
+    };
+  },
+
+  async setDxRate(args: SetDxRateArgs): Promise<void> {
+    await sleep(120);
+    const cfg = MARKETS[args.market];
+    const tab = cfg.sheetTabDx;
+    const rows = state.tabs.get(tab) ?? [];
+    let row = rows.find(
+      (r) => r.date === args.dateLabel && r.device === args.device && r.game === args.game,
+    );
+    if (!row) {
+      row = {
+        week: args.weekNumber,
+        date: args.dateLabel,
+        device: args.device,
+        game: args.game,
+        cells: {},
+      };
+      rows.unshift(row); // new rows go on top, matches real endpoint
+      state.tabs.set(tab, rows);
+    }
+    if (args.rating === null) {
+      delete row.cells[args.brandIndex];
+    } else {
+      row.cells[args.brandIndex] = {
+        label: brandCellLabel(args.brand),
+        color: JSON.stringify(RATING_COLORS[args.rating]),
+        note: '',
+      };
+    }
+    log(
+      'setDxRate',
+      args.market,
+      args.brand.name,
+      '@',
+      args.dateLabel,
+      '→',
+      args.rating,
+      `(col ${SHEET_FIRST_BRAND_COL + args.brandIndex})`,
+    );
   },
 };

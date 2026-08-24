@@ -49,6 +49,21 @@ export type HeatmapData = {
 
 // One interface, two implementations: `remote` (Vercel API + direct-to-Google
 // chunk upload) and `mock` (in-memory, used during local `vite dev`).
+// DX rerate: an admin adjusts an existing (or new) row's brand cell on the
+// DX tab only. No video, no notes — just the rating (or null to clear).
+export type SetDxRateArgs = {
+  market: string;
+  // Row key — matched against columns B (Date), C (Device), D (Game). If no
+  // row exists yet, the endpoint inserts one at the top.
+  dateLabel: string; // formatted like the VA sheet, e.g. "Fri, 21/08"
+  device: string; // shown in Device column
+  game: string; // "Provider - Game", matches the VA sheet convention
+  weekNumber: number;
+  brand: BrandConfig; // for column-index resolution + label
+  brandIndex: number; // 0-based within the market's brand list → column E+i
+  rating: 'smooth' | 'slight' | 'strong' | null; // null clears the cell
+};
+
 // DX MP account used by the VA to log in and record the game. Read-only,
 // looked up per-brand on demand from the "DX Accounts" sheet tab.
 export type DxAccount = {
@@ -67,6 +82,9 @@ export interface GoogleBackend {
   weekDates(session: { market: string; weekNumber: number }): Promise<string[]>;
   // Full heatmap tab for the admin viewer.
   fetchHeatmap(market: string): Promise<HeatmapData>;
+  // DX rerate tab — same shape as the VA heatmap but admins can edit.
+  fetchDxRateHeatmap(market: string): Promise<HeatmapData>;
+  setDxRate(args: SetDxRateArgs): Promise<void>;
   // DX login info revealed in the slot card. Returns null when the sheet
   // has no matching row so the UI can say "not on file" rather than error.
   fetchDxAccount(market: string, brand: string): Promise<DxAccount | null>;

@@ -38,6 +38,7 @@ export type MarketConfig = {
   flag: string;
   sessionsPerWeek: 1 | 2 | 3;
   sheetTab: string; // tab name in the heatmap spreadsheet
+  sheetTabDx: string; // DX rerate tab (admin-editable, separate from VA)
   brands: BrandConfig[]; // order = Sheet column order (E→M)
 };
 
@@ -49,6 +50,7 @@ export const MARKETS: Record<string, MarketConfig> = {
     // Bumped from 2 to 3 to add an extra test day for red-signal weeks.
     sessionsPerWeek: 3,
     sheetTab: 'TH - Heatmap',
+    sheetTabDx: 'TH - Heatmap (DX)',
     brands: [
       { group: 'KZG1', name: 'DEE99', isCompetitor: false },
       { group: 'KZG2', name: 'BIG188', isCompetitor: false },
@@ -69,6 +71,7 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇵🇭',
     sessionsPerWeek: 1,
     sheetTab: 'PH - Heatmap',
+    sheetTabDx: 'PH - Heatmap (DX)',
     // Brands match the DX Accounts sheet (KZG-normalized group codes).
     brands: [
       { group: 'PHKZG1', name: 'EZWIN', isCompetitor: false },
@@ -85,6 +88,7 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇲🇽',
     sessionsPerWeek: 1,
     sheetTab: 'MX - Heatmap',
+    sheetTabDx: 'MX - Heatmap (DX)',
     // MX checks one brand per group only. Matches the DX Accounts sheet.
     brands: [
       { group: 'MXKZG1', name: 'MXWOW', isCompetitor: false },
@@ -97,6 +101,7 @@ export const MARKETS: Record<string, MarketConfig> = {
     flag: '🇧🇩',
     sessionsPerWeek: 1,
     sheetTab: 'BD - Heatmap',
+    sheetTabDx: 'BD - Heatmap (DX)',
     // BD checks one brand per group only. Matches the DX Accounts sheet
     // (KZG-normalized group codes).
     brands: [

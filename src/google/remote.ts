@@ -11,6 +11,7 @@ import type {
   LogSlotArgs,
   PreparedUpload,
   PrepareUploadArgs,
+  SetDxRateArgs,
   UploadArgs,
 } from './types';
 
@@ -141,6 +142,15 @@ export const remoteBackend: GoogleBackend = {
   async fetchHeatmap(market: string): Promise<HeatmapData> {
     const resp = await callApi(`/api/heatmap?market=${encodeURIComponent(market)}`);
     return (await resp.json()) as HeatmapData;
+  },
+
+  async fetchDxRateHeatmap(market: string): Promise<HeatmapData> {
+    const resp = await callApi(`/api/dx-heatmap?market=${encodeURIComponent(market)}`);
+    return (await resp.json()) as HeatmapData;
+  },
+
+  async setDxRate(args: SetDxRateArgs): Promise<void> {
+    await callApi('/api/dx-rate', args);
   },
 
   async fetchDxAccount(market: string, brand: string): Promise<DxAccount | null> {

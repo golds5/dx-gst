@@ -686,6 +686,24 @@ footer{
 .admin-tab.on{background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary)}
 .admin-status{color:var(--muted);font-size:13px;padding:24px 0}
 
+/* Two stacked tables on the admin page: VA (read-only) + DX (editable). */
+.heat-section{margin-top:16px}
+.heat-section:first-of-type{margin-top:6px}
+.heat-section-head{margin:0 0 8px}
+.heat-section-head h2{font-size:15px;font-weight:700;margin:0}
+.heat-section-head .heat-section-sub{font-size:11.5px;color:var(--muted)}
+.heat-section.editable table.heatmap td.brand-cell.editable{cursor:pointer}
+.heat-section.editable table.heatmap td.brand-cell.editable:hover{
+  outline:2px solid var(--primary);outline-offset:-2px;
+}
+.heat-section.editable table.heatmap td.brand-cell.untested.editable{
+  color:var(--muted);opacity:.85;
+}
+.heat-section.editable .heat-chip.untested{
+  background:var(--panel-2);color:var(--muted);opacity:.85;cursor:pointer;
+}
+.heat-section.editable .heat-chip:disabled{cursor:default;opacity:.6}
+
 /* Rating legend above the records. */
 .heat-legend{
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;
