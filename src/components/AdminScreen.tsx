@@ -7,6 +7,7 @@ import {
 } from '../config';
 import { backend } from '../google';
 import type { HeatmapCell, HeatmapData } from '../google/types';
+import { brandCellLabel } from '../lib/labels';
 
 const ADMIN_KEY = 'dxgst.admin';
 
@@ -60,15 +61,18 @@ export function AdminScreen({ onExit }: Props) {
     };
   }, [unlocked, market]);
 
-  // Real brand columns only. The API pads every row out to 13 cells, so a
-  // market with fewer brands would otherwise render dead columns.
-  const brandCols = useMemo(
-    () =>
-      (data?.headers ?? [])
-        .map((label, index) => ({ label, index }))
-        .filter((c) => c.index >= SHEET_FIRST_BRAND_COL && c.label.trim() !== ''),
-    [data],
-  );
+  // Brand columns come from the market config (canonical current brand list).
+  // Falling back to the sheet header would drop everything on tabs whose
+  // header row was ever wiped (e.g. by the earlier admin-reset). Rows still
+  // match by column index because sheet column layout is E, F, G… onward.
+  const brandCols = useMemo(() => {
+    const cfg = MARKETS[market];
+    if (!cfg) return [];
+    return cfg.brands.map((b, i) => ({
+      label: brandCellLabel(b),
+      index: SHEET_FIRST_BRAND_COL + i,
+    }));
+  }, [market]);
 
   function submitPasscode() {
     if (passInput.trim() === ADMIN_PASSCODE) {
