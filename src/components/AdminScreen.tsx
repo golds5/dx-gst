@@ -20,8 +20,8 @@ const COL_DATE = 1;
 const COL_DEVICE = 2;
 const COL_GAME = 3;
 
-// Rating → the exact CSS string the API produces from RATING_COLORS. Used to
-// invert the DX cell color back to a rating name for click-to-cycle.
+// Rating → the exact CSS string the API produces from RATING_COLORS. Used
+// to write the DX cell color and to display the click-to-cycle chip.
 const RATING_TO_CSS: Record<Rating, string> = (() => {
   const to255 = (v: number) => Math.round(v * 255);
   const cssOf = (c: { red: number; green: number; blue: number }) =>
@@ -35,11 +35,38 @@ const RATING_TO_CSS: Record<Rating, string> = (() => {
 
 const RATINGS: Rating[] = ['smooth', 'slight', 'strong'];
 
-// Match a cell's current color back to a rating (or null when unset).
+// Sheets stores color as float and re-rounds on read, so an exact-string
+// match fails on ±1 channel drift. Parse channels and match by nearest.
+function parseRgb(color: string): [number, number, number] | null {
+  const m = /rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i.exec(color);
+  return m ? [+m[1], +m[2], +m[3]] : null;
+}
+const RATING_RGB: Record<Rating, [number, number, number]> = {
+  smooth: parseRgb(RATING_TO_CSS.smooth)!,
+  slight: parseRgb(RATING_TO_CSS.slight)!,
+  strong: parseRgb(RATING_TO_CSS.strong)!,
+};
+
+// Nearest-rating match within a small tolerance per channel. Anything that
+// looks vaguely green/yellow/red still snaps to the intended rating.
 function ratingFromColor(color: string | null): Rating | null {
   if (!color) return null;
-  for (const r of RATINGS) if (RATING_TO_CSS[r] === color) return r;
-  return null;
+  const rgb = parseRgb(color);
+  if (!rgb) return null;
+  let best: Rating | null = null;
+  let bestDist = Infinity;
+  for (const r of RATINGS) {
+    const t = RATING_RGB[r];
+    const dist =
+      Math.abs(rgb[0] - t[0]) + Math.abs(rgb[1] - t[1]) + Math.abs(rgb[2] - t[2]);
+    if (dist < bestDist) {
+      best = r;
+      bestDist = dist;
+    }
+  }
+  // 24 = ~8 per channel of drift. Anything looser risks matching random
+  // pastel colors admins might apply by hand.
+  return bestDist <= 24 ? best : null;
 }
 
 // Cycle: none → smooth → slight → strong → none. One tap advances one step.
@@ -224,6 +251,8 @@ export function AdminScreen({ onExit }: Props) {
       rating: Rating;
     };
     const changes: Change[] = [];
+    let vaRatedCells = 0;
+    let alreadyInDx = 0;
     for (const vaRow of data.rows) {
       const key = rowKey(vaRow);
       const dxRow = dxByKey.get(key);
@@ -231,16 +260,24 @@ export function AdminScreen({ onExit }: Props) {
         const vaCell = vaRow[col.index];
         const vaRating = ratingFromColor(vaCell?.color ?? null);
         if (!vaRating) continue;
+        vaRatedCells += 1;
         // Only fill blank DX cells — existing DX ratings stay untouched.
         const dxHasRating = dxRow && isTested(dxRow[col.index]);
-        if (dxHasRating) continue;
+        if (dxHasRating) {
+          alreadyInDx += 1;
+          continue;
+        }
         changes.push({ row: vaRow, col, rating: vaRating });
       }
     }
 
     if (changes.length === 0) {
       setSyncBusy(false);
-      setSyncSummary('Already in sync — nothing new to copy.');
+      setSyncSummary(
+        vaRatedCells === 0
+          ? 'No VA ratings found on this tab — nothing to copy.'
+          : `Already in sync — ${alreadyInDx}/${vaRatedCells} VA ratings already in DX.`,
+      );
       return;
     }
 
