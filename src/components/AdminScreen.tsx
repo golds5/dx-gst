@@ -86,6 +86,8 @@ export function AdminScreen({ onExit }: Props) {
   );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncSummary, setSyncSummary] = useState<string | null>(null);
   // Track whether market changed since last fetch — controls whether we clear
   // the screen (market swap) or keep old data on-screen (manual refresh).
   const lastMarketRef = useRef<string | null>(null);
@@ -201,6 +203,80 @@ export function AdminScreen({ onExit }: Props) {
         .then((d) => setDxData(d))
         .catch(() => {});
     }
+  }
+
+  // Copy VA-rated cells into blank DX cells. Existing DX ratings are never
+  // overwritten. Runs sequentially so a Sheets rate limit doesn't cascade
+  // into partial writes.
+  async function syncFromVa() {
+    if (!canEdit) return;
+    if (!data || !dxData) return;
+    const cfg = MARKETS[market];
+    if (!cfg) return;
+
+    setSyncBusy(true);
+    setSyncSummary(null);
+    setSaveError(null);
+
+    type Change = {
+      row: HeatmapCell[];
+      col: (typeof brandCols)[number];
+      rating: Rating;
+    };
+    const changes: Change[] = [];
+    for (const vaRow of data.rows) {
+      const key = rowKey(vaRow);
+      const dxRow = dxByKey.get(key);
+      for (const col of brandCols) {
+        const vaCell = vaRow[col.index];
+        const vaRating = ratingFromColor(vaCell?.color ?? null);
+        if (!vaRating) continue;
+        // Only fill blank DX cells — existing DX ratings stay untouched.
+        const dxHasRating = dxRow && isTested(dxRow[col.index]);
+        if (dxHasRating) continue;
+        changes.push({ row: vaRow, col, rating: vaRating });
+      }
+    }
+
+    if (changes.length === 0) {
+      setSyncBusy(false);
+      setSyncSummary('Already in sync — nothing new to copy.');
+      return;
+    }
+
+    let ok = 0;
+    let fail = 0;
+    for (const c of changes) {
+      try {
+        await backend.setDxRate({
+          market: cfg.code,
+          dateLabel: String(c.row[COL_DATE]?.value ?? ''),
+          device: String(c.row[COL_DEVICE]?.value ?? ''),
+          game: String(c.row[COL_GAME]?.value ?? ''),
+          weekNumber: Number(c.row[COL_WEEK]?.value ?? 0),
+          brand: c.col.brand,
+          brandIndex: c.col.brandIndex,
+          rating: c.rating,
+        });
+        ok += 1;
+      } catch {
+        fail += 1;
+      }
+    }
+
+    // Pull fresh DX data so the table reflects the writes.
+    try {
+      const fresh = await backend.fetchDxRateHeatmap(market);
+      setDxData(fresh);
+    } catch {
+      /* refresh failure surfaces on next manual refresh */
+    }
+    setSyncBusy(false);
+    setSyncSummary(
+      fail === 0
+        ? `Copied ${ok} rating${ok === 1 ? '' : 's'} from VA.`
+        : `Copied ${ok}, ${fail} failed. Try Refresh, then Sync again.`,
+    );
   }
 
   function submitPasscode() {
@@ -353,6 +429,23 @@ export function AdminScreen({ onExit }: Props) {
                   }}
                   editable={false}
                 />
+              )}
+
+              {mode === 'dx' && canEdit && (
+                <div className="dx-sync-row">
+                  <button
+                    type="button"
+                    className="dx-sync-btn"
+                    onClick={syncFromVa}
+                    disabled={syncBusy || loading}
+                  >
+                    {syncBusy ? '⏳ Syncing…' : '↓ Sync new VA ratings'}
+                  </button>
+                  <span className="dx-sync-hint">
+                    Copies VA ratings into empty DX cells. Existing DX ratings stay.
+                  </span>
+                  {syncSummary && <span className="dx-sync-summary">{syncSummary}</span>}
+                </div>
               )}
 
               {mode === 'dx' && (
