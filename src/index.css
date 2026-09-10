@@ -433,6 +433,20 @@ a.drive:hover{border-bottom-style:solid}
 .hint b{color:var(--muted);font-weight:500}
 .invalid-msg{font-size:11.5px;color:var(--red);margin-top:6px}
 
+/* ── page-speed probe ────────────────────────────────── */
+.perf{border-top:1px dashed var(--line);padding-top:12px}
+.perf-ok{color:var(--green,#34c724);font-weight:600}
+.perf-stats{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+}
+.perf-stats span{
+  padding:5px 9px;border-radius:99px;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+}
+.perf-stats b{color:var(--faint);font-weight:500;margin-right:4px;text-transform:uppercase;font-size:9.5px;letter-spacing:.05em}
+.perf-stats i{color:var(--faint);font-style:normal}
+
 /* ── buttons & forms ─────────────────────────────────── */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;

@@ -33,6 +33,15 @@ export type LogSlotArgs = {
   notes: string;
   minBet: string; // recorded in the cell note as testing context
   driveLink: string;
+  perfLink?: string; // page-speed CSV, when the VA measured one
+};
+
+// Page-speed CSV upload. Tiny (a few KB), so unlike the video it goes
+// through the API function as one request instead of a resumable session.
+export type UploadPerfCsvArgs = {
+  session: Session;
+  brand: BrandConfig;
+  csv: string;
 };
 
 // Read-only heatmap view for the admin screen.
@@ -77,6 +86,9 @@ export type DxAccount = {
 export interface GoogleBackend {
   prepareUpload(args: PrepareUploadArgs): Promise<PreparedUpload>;
   uploadVideo(args: UploadArgs): Promise<{ fileId: string; webViewLink: string }>;
+  // Writes the slot's page-speed CSV next to its video in the same Drive
+  // folder. Replaces an existing CSV for the slot rather than duplicating.
+  uploadPerfCsv(args: UploadPerfCsvArgs): Promise<{ fileId: string; webViewLink: string }>;
   logSlot(args: LogSlotArgs): Promise<void>;
   // Column-B dates already logged this ISO week (for session-day suggest).
   weekDates(session: { market: string; weekNumber: number }): Promise<string[]>;

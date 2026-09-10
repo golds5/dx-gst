@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties } from 'react';
 import { LAG_PRESETS } from '../config';
 import { backend } from '../google';
 import type { DxAccount } from '../google/types';
+import { siteForBrand } from '../lib/boSites';
 import {
   buildLagNotes,
   formatClockInput,
   normalizeClockInput,
   validateLagReport,
 } from '../lib/naming';
+import { summarize, verdict } from '../lib/pagespeed';
 import type { Rating, SlotEntry } from '../types';
 
 const RATING_META: { key: Rating; cls: string; dot: string; label: string }[] = [
@@ -56,6 +58,7 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
     text: slot.notes,
   };
   const lagError = isLag ? validateLagReport(report) : null;
+  const measuring = busy && slot.perfStatus === 'measuring';
   const canSubmit =
     Boolean(slot.videoFile && slot.rating && !lagError) &&
     (status === 'empty' || status === 'error');
@@ -90,6 +93,8 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
           <span className="status-chip ok">LOGGED ✓</span>
         ) : status === 'error' ? (
           <span className="status-chip err">ERROR</span>
+        ) : measuring ? (
+          <span className="status-chip busy">TESTING SPEED</span>
         ) : busy ? (
           <span className="status-chip busy">UPLOADING</span>
         ) : null}
@@ -157,7 +162,11 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
                     <div
                       className={`progress-label${slot.reconnecting ? ' reconnect' : ''}`}
                     >
-                      {slot.reconnecting ? 'Reconnecting…' : `${slot.progress ?? 0}%`}
+                      {measuring
+                        ? 'Testing speed…'
+                        : slot.reconnecting
+                          ? 'Reconnecting…'
+                          : `${slot.progress ?? 0}%`}
                     </div>
                   </>
                 )}
@@ -208,6 +217,20 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
               ))}
             </div>
           </div>
+
+          <PageSpeedPanel
+            key={`${market}-${brand.name}`}
+            slot={slot}
+            onChange={onChange}
+            // The KZ reference covers every non-competitor brand and needs
+            // no network call, so it answers instantly; competitors fall
+            // through to the DX Accounts sheet, then to manual entry.
+            resolveDomain={async () =>
+              siteForBrand(market, brand.name) ??
+              (await login.ensureAccount())?.mpDomain ??
+              null
+            }
+          />
 
           {isLag && (
             <div className="notes">
@@ -285,18 +308,139 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
                     : undefined
                 }
               >
-                {busy
-                  ? slot.reconnecting
-                    ? 'Reconnecting…'
-                    : `Uploading ${slot.progress ?? 0}%`
-                  : status === 'uploaded'
-                    ? 'Logging…'
-                    : 'Submit slot'}
+                {measuring
+                  ? slot.perfProgress?.total
+                    ? `Testing speed ${slot.perfProgress.done}/${slot.perfProgress.total}`
+                    : 'Testing speed…'
+                  : busy
+                    ? slot.reconnecting
+                      ? 'Reconnecting…'
+                      : `Uploading ${slot.progress ?? 0}%`
+                    : status === 'uploaded'
+                      ? 'Logging…'
+                      : 'Submit slot'}
               </button>
             )
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Page-speed probe ────────────────────────────────────────────────
+// Measures the connection between THIS device and the brand site, right
+// before the VA submits, so the CSV describes the same conditions as the
+// recording. See src/lib/pagespeed.ts for what is and is not measurable
+// from a page on a different origin.
+
+// The resolved site is kept in slot state but never rendered: the VA is not
+// meant to see or change which page gets probed, only that a check runs.
+type PanelProps = {
+  slot: SlotEntry;
+  onChange: (patch: Partial<SlotEntry>) => void;
+  resolveDomain: () => Promise<string | null>;
+};
+
+function PageSpeedPanel({ slot, onChange, resolveDomain }: PanelProps) {
+  const status = slot.perfStatus ?? 'idle';
+  const measuring = status === 'measuring';
+
+  // Latest-value refs so the one-shot autofill effect below never captures
+  // a stale onChange, and so it can stay dependency-free.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const resolveRef = useRef(resolveDomain);
+  resolveRef.current = resolveDomain;
+  const hasUrl = Boolean(slot.perfUrl);
+  const hasUrlRef = useRef(hasUrl);
+  hasUrlRef.current = hasUrl;
+
+  // Resolve the brand's site once per slot (the panel is keyed on the brand,
+  // so it remounts when the VA opens a different one) and stash it for the
+  // submit-time probe.
+  // No "already ran" ref guard here: StrictMode mounts, cleans up, then
+  // mounts again, and a ref survives that cycle — the first pass would set
+  // the guard, get cancelled by its own cleanup, and the second pass would
+  // bail out, leaving the value unset. The cancel flag alone is correct:
+  // the discarded pass drops its result and the live pass stores the value.
+  useEffect(() => {
+    let cancelled = false;
+    void resolveRef.current().then((domain) => {
+      if (!cancelled && domain && !hasUrlRef.current) {
+        onChangeRef.current({ perfUrl: domain.replace(/^https?:\/\//, '') });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const result = slot.perfResult;
+  const response = result ? summarize(result.response) : null;
+  const baseline = result ? summarize(result.baseline) : null;
+  const brandUnreachable = result?.url !== null && response !== null && response.ok === 0;
+
+  return (
+    <div className="perf">
+      <div className="rate-label">
+        Connection check — runs on submit
+        {status === 'done' && <span className="perf-ok"> measured ✓</span>}
+      </div>
+
+      {status === 'idle' && (
+        <div className="hint">
+          Submit first measures this phone's connection, then uploads the video.
+        </div>
+      )}
+
+      {measuring && (
+        <div className="hint">
+          Testing speed
+          {slot.perfProgress?.total
+            ? ` — sample ${slot.perfProgress.done}/${slot.perfProgress.total}`
+            : '…'}
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="invalid-msg">Speed test failed: {slot.perfError}</div>
+      )}
+
+      {result && response && baseline && (
+        <>
+          {brandUnreachable && (
+            <div className="invalid-msg">
+              The brand site did not respond — it may be blocked on this network.
+              Saved in the CSV as evidence.
+            </div>
+          )}
+          <div className="perf-stats">
+            {result.url !== null && response.ok > 0 && (
+              <span>
+                <b>Brand</b> {response.median?.toFixed(0)} ms
+              </span>
+            )}
+            {baseline.ok > 0 ? (
+              <span>
+                <b>Baseline</b> {baseline.median?.toFixed(0)} ms
+              </span>
+            ) : (
+              <span>
+                <b>Baseline</b> unreachable
+              </span>
+            )}
+            {result.network.effectiveType && (
+              <span>
+                <b>Net</b> {result.network.effectiveType}
+                {result.network.downlinkMbps !== undefined &&
+                  ` · ${result.network.downlinkMbps} Mbps`}
+              </span>
+            )}
+          </div>
+          <div className="hint">{verdict(result)}</div>
+        </>
+      )}
     </div>
   );
 }
@@ -326,21 +470,29 @@ function useLoginAccount(market: string, brand: string) {
     setCopied(null);
   }, [market, brand]);
 
+  // Fetch once per brand. Callable without opening the panel so the
+  // page-speed field can auto-fill the brand's MP domain on request.
+  const ensureAccount = useCallback(async (): Promise<DxAccount | null> => {
+    if (loaded) return account;
+    setLoading(true);
+    setError(null);
+    try {
+      const a = await backend.fetchDxAccount(market, brand);
+      setAccount(a);
+      return a;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      return null;
+    } finally {
+      setLoading(false);
+      setLoaded(true);
+    }
+  }, [account, brand, loaded, market]);
+
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && !loaded) {
-      setLoading(true);
-      setError(null);
-      backend
-        .fetchDxAccount(market, brand)
-        .then((a) => setAccount(a))
-        .catch((e) => setError(e instanceof Error ? e.message : String(e)))
-        .finally(() => {
-          setLoading(false);
-          setLoaded(true);
-        });
-    }
+    if (next && !loaded) void ensureAccount();
   }
 
   async function copy(field: string, value: string) {
@@ -356,6 +508,7 @@ function useLoginAccount(market: string, brand: string) {
   return {
     open,
     toggle,
+    ensureAccount,
     loading,
     error,
     account,

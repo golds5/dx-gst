@@ -61,12 +61,13 @@ type Body = {
   notes: string;
   minBet: string;
   driveLink: string;
+  perfLink?: string;
 };
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-    const { session, brandIndex, brand, rating, notes, minBet, driveLink } =
+    const { session, brandIndex, brand, rating, notes, minBet, driveLink, perfLink } =
       req.body as Body;
 
     const marketCfg = MARKETS[session.market];
@@ -118,7 +119,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       rowNumber = 2;
     }
 
-    const note = [`Min bet: ${minBet}`, notes.trim(), `Video: ${driveLink}`]
+    const note = [
+      `Min bet: ${minBet}`,
+      notes.trim(),
+      `Video: ${driveLink}`,
+      perfLink ? `Speed CSV: ${perfLink}` : '',
+    ]
       .filter(Boolean)
       .join('\n\n');
     await batchUpdate([

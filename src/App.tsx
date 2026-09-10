@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ADMIN_PASSCODE, ADMIN_PASSCODE_READONLY, MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
+import { deviceLabelFor } from './lib/labels';
 import { buildLagNotes, pad2 } from './lib/naming';
+import { buildPerfCsv, measurePageSpeed, normalizeProbeUrl } from './lib/pagespeed';
+import type { PageSpeedResult } from './lib/pagespeed';
 import type { Session, SlotEntry } from './types';
 import { AdminScreen } from './components/AdminScreen';
 import { SessionSetup } from './components/SessionSetup';
@@ -102,6 +105,8 @@ export default function App() {
     // Carried locally — React state updates are async, so reading the link
     // back from state right after upload could see a stale value.
     let driveLink = slot.driveLink;
+    let perfResult: PageSpeedResult | undefined = slot.perfResult;
+    let perfLink = slot.perfLink;
 
     if (!retryLoggingOnly) {
       updateSlot(index, {
@@ -111,6 +116,38 @@ export default function App() {
         error: undefined,
         errorPhase: undefined,
       });
+
+      // a0. Connection check, before the upload so the video transfer does
+      // not skew it. Always re-run on a (re)submit — conditions may have
+      // changed — which also drops any CSV link from a previous attempt.
+      // Best-effort: a failed probe is recorded and the slot proceeds.
+      perfLink = undefined;
+      updateSlot(index, {
+        perfStatus: 'measuring',
+        perfProgress: { done: 0, total: 0 },
+        perfResult: undefined,
+        perfError: undefined,
+        perfLink: undefined,
+      });
+      try {
+        // The site is auto-resolved and hidden from the VA, so a malformed
+        // value cannot be corrected by hand — fall back to a baseline-only
+        // run instead of failing the check.
+        const probeUrl = normalizeProbeUrl(slot.perfUrl ?? '') ? slot.perfUrl : null;
+        perfResult = await measurePageSpeed({
+          url: probeUrl,
+          onProgress: (done, total) => updateSlot(index, { perfProgress: { done, total } }),
+        });
+        updateSlot(index, { perfStatus: 'done', perfResult, perfProgress: undefined });
+      } catch (err) {
+        perfResult = undefined;
+        updateSlot(index, {
+          perfStatus: 'error',
+          perfError: errorMessage(err),
+          perfProgress: undefined,
+        });
+      }
+
       try {
         // a+b. Server ensures the folder path, generates the filename, and
         // opens the session (replacing the slot's existing video if any).
@@ -151,6 +188,35 @@ export default function App() {
       updateSlot(index, { status: 'uploaded', error: undefined, errorPhase: undefined });
     }
 
+    // b2. Page-speed CSV from step a0. Deliberately best-effort: the video
+    // is already in Drive and the rating is the real deliverable, so a CSV
+    // failure warns and moves on instead of failing the slot.
+    if (perfResult && !perfLink) {
+      try {
+        const csv = buildPerfCsv(perfResult, {
+          market: currentSession.market,
+          brand: slot.brand.name,
+          device: deviceLabelFor(currentSession.device),
+          provider: currentSession.provider,
+          game: currentSession.game,
+          week: `W${pad2(currentSession.weekNumber)}`,
+          testDate: currentSession.testDate,
+        });
+        const uploaded = await backend.uploadPerfCsv({
+          session: currentSession,
+          brand: slot.brand,
+          csv,
+        });
+        perfLink = uploaded.webViewLink;
+        updateSlot(index, { perfLink });
+      } catch (err) {
+        console.error('speed CSV upload failed', err);
+        showToast(
+          `Speed CSV for ${slot.brand.name} could not be saved (${errorMessage(err)}) — the video and rating still logged.`,
+        );
+      }
+    }
+
     // c. Write the heatmap cell. The video is already in Drive at this
     // point — a failure here must offer "Retry logging", never re-upload.
     try {
@@ -171,6 +237,7 @@ export default function App() {
         notes,
         minBet: currentSession.minBet,
         driveLink: driveLink!,
+        perfLink,
       });
       updateSlot(index, { status: 'logged' });
     } catch (err) {
