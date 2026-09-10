@@ -13,6 +13,7 @@ import type {
   PrepareUploadArgs,
   SetDxRateArgs,
   UploadArgs,
+  UploadPerfCsvArgs,
 } from './types';
 
 async function callApi(path: string, body?: unknown): Promise<Response> {
@@ -121,6 +122,11 @@ export const remoteBackend: GoogleBackend = {
       }
     }
     throw new Error('Upload ended without completion response');
+  },
+
+  async uploadPerfCsv(args: UploadPerfCsvArgs) {
+    const resp = await callApi('/api/upload-perf', args);
+    return (await resp.json()) as { fileId: string; webViewLink: string };
   },
 
   async logSlot(args: LogSlotArgs): Promise<void> {

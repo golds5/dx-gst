@@ -74,6 +74,14 @@ export function buildVideoFilename(i: FilenameInput): string {
   return `${parts.join('_')}.${extensionOf(i.sourceFileName)}`;
 }
 
+// Page-speed CSV that rides along with a slot's video. The `_speed` suffix
+// keeps its stem distinct from the video's — `stemOf` drives the
+// replace-in-place lookup, so a same-stem CSV would make the next video
+// upload overwrite the CSV instead of the old video.
+export function buildPerfCsvFilename(i: Omit<FilenameInput, 'sourceFileName'>): string {
+  return `${stemOf(buildVideoFilename({ ...i, sourceFileName: 'x.csv' }))}_speed.csv`;
+}
+
 export function extensionOf(fileName: string, fallback = 'mp4'): string {
   const m = /\.([A-Za-z0-9]+)$/.exec(fileName);
   return m ? m[1].toLowerCase() : fallback;
