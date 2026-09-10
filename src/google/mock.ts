@@ -6,6 +6,7 @@
 import { MARKETS, RATING_COLORS, SHEET_FIRST_BRAND_COL } from '../config';
 import {
   buildFolderPath,
+  buildPerfCsvFilename,
   buildVideoFilename,
   formatSheetDate,
   stemOf,
@@ -19,6 +20,7 @@ import type {
   PrepareUploadArgs,
   SetDxRateArgs,
   UploadArgs,
+  UploadPerfCsvArgs,
 } from './types';
 
 // {red,green,blue} 0–1 → css rgb() for the admin viewer.
@@ -123,7 +125,51 @@ export const mockBackend: GoogleBackend = {
     };
   },
 
-  async logSlot({ session, brandIndex, brand, rating, notes, minBet, driveLink }: LogSlotArgs) {
+  async uploadPerfCsv({ session, brand, csv }: UploadPerfCsvArgs) {
+    await sleep(200);
+    const folderPath = buildFolderPath(
+      session.isoYear,
+      session.weekNumber,
+      session.market,
+    ).join('/');
+    const name = buildPerfCsvFilename({
+      isoYear: session.isoYear,
+      weekNumber: session.weekNumber,
+      market: session.market,
+      sessionOfWeek: session.sessionOfWeek,
+      provider: session.provider,
+      game: session.game,
+      brand,
+      deviceId: session.device,
+    });
+    const existing = state.filesByFolder.get(folderPath) ?? [];
+    state.filesByFolder.set(folderPath, existing);
+    const prevIndex = existing.indexOf(name);
+    if (prevIndex !== -1) existing.splice(prevIndex, 1);
+    existing.push(name);
+    state.uploadCounter += 1;
+    const fileId = `mock-file-${state.uploadCounter}`;
+    log(
+      `uploaded speed CSV "${name}" (${csv.length} bytes) → ${folderPath}` +
+        `${prevIndex !== -1 ? ' (replacing)' : ''}`,
+      { csv },
+    );
+    return {
+      fileId,
+      webViewLink: `https://drive.google.com/file/d/${fileId}/view (mock)`,
+    };
+  },
+
+  async logSlot({
+    session,
+    brandIndex,
+    brand,
+    rating,
+    notes,
+    minBet,
+    driveLink,
+    perfLink,
+  }: LogSlotArgs) {
     await sleep(350);
     const tab = MARKETS[session.market].sheetTab;
     const rows = state.tabs.get(tab) ?? [];
@@ -141,7 +187,12 @@ export const mockBackend: GoogleBackend = {
     } else {
       log(`reusing existing row ${idx + 2} in "${tab}"`);
     }
-    const note = [`Min bet: ${minBet}`, notes.trim(), `Video: ${driveLink}`]
+    const note = [
+      `Min bet: ${minBet}`,
+      notes.trim(),
+      `Video: ${driveLink}`,
+      perfLink ? `Speed CSV: ${perfLink}` : '',
+    ]
       .filter(Boolean)
       .join('\n\n');
     rows[idx].cells[brandIndex] = {

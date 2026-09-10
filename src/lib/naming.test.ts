@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildFolderPath,
   buildLagNotes,
+  buildPerfCsvFilename,
   buildVideoFilename,
   camelPart,
   extensionOf,
@@ -25,6 +26,23 @@ const baseInput = {
   deviceId: 'VivoY20S',
   sourceFileName: 'screen-recording.mp4',
 };
+
+describe('buildPerfCsvFilename', () => {
+  it('names the CSV after the slot with a _speed suffix', () => {
+    expect(buildPerfCsvFilename(baseInput)).toBe(
+      '2026-W29_TH2_JILI-GoldenEmpire_KZG1-DEE99_VivoY20S_speed.csv',
+    );
+  });
+
+  // create-upload.ts finds the slot's previous video by comparing stems, so
+  // an identical stem would make the next video upload overwrite the CSV.
+  it('has a different stem from the slot video', () => {
+    expect(stemOf(buildPerfCsvFilename(baseInput))).not.toBe(
+      stemOf(buildVideoFilename(baseInput)),
+    );
+  });
+
+});
 
 describe('buildVideoFilename', () => {
   it('matches the exact example from Section 5 of the spec', () => {

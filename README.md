@@ -93,6 +93,27 @@ Import the repo in Vercel (framework preset: **Vite**) or `vercel deploy`.
 Set the two `GOOGLE_SA_*` env vars (step 4 above); everything else is
 compiled in from `src/config.ts`.
 
+## Connection check (speed CSV)
+
+Submitting a slot first runs a short connection check from the VA's phone,
+then uploads the video, then a `…_speed.csv` next to it in the same Drive
+folder (link added to the heatmap cell note). Its purpose is to tell a slow
+game *server* apart from a slow VA *connection*:
+
+- **Brand site** (`mp_domain` from [kz_sites.csv](./kz_sites.csv), falling back
+  to `brand_site`; editable in the slot card) — DNS + connect + TTFB via a
+  cross-origin `no-cors` fetch, plus a favicon round trip.
+- **Baseline** — full download of `/favicon.svg` from the app's own origin.
+  Baseline fast + brand slow → brand server/CDN. Both slow → VA connection.
+- **Device network** — `navigator.connection` (4g/3g, downlink, RTT) and
+  hardware info. A one-line verdict sits at the top of the CSV.
+
+Three samples per probe, sequential, 8 s timeout, stop after the first
+failure — worst case ~24 s added to a submit. The check is best-effort: a
+failed probe or CSV upload never blocks the video or the rating. It cannot
+read in-page FCP / LCP / long tasks from another origin — that still needs
+the Chrome extension in `component-performance-audit/`.
+
 ## Error handling (Section 8 of the spec)
 
 - The service-account token is cached and auto-refreshed server-side; the
