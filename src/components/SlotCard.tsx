@@ -10,7 +10,7 @@ import {
   normalizeClockInput,
   validateLagReport,
 } from '../lib/naming';
-import { normalizeProbeUrl, summarize, verdict } from '../lib/pagespeed';
+import { summarize, verdict } from '../lib/pagespeed';
 import type { Rating, SlotEntry } from '../types';
 
 const RATING_META: { key: Rating; cls: string; dot: string; label: string }[] = [
@@ -58,13 +58,9 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
     text: slot.notes,
   };
   const lagError = isLag ? validateLagReport(report) : null;
-  // A typed-but-unparseable site would make the submit-time speed test
-  // throw; block here so the VA fixes it before the pipeline starts.
-  const perfUrlInvalid =
-    Boolean(slot.perfUrl?.trim()) && !normalizeProbeUrl(slot.perfUrl ?? '');
   const measuring = busy && slot.perfStatus === 'measuring';
   const canSubmit =
-    Boolean(slot.videoFile && slot.rating && !lagError && !perfUrlInvalid) &&
+    Boolean(slot.videoFile && slot.rating && !lagError) &&
     (status === 'empty' || status === 'error');
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
@@ -225,7 +221,6 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
           <PageSpeedPanel
             key={`${market}-${brand.name}`}
             slot={slot}
-            locked={locked}
             onChange={onChange}
             // The KZ reference covers every non-competitor brand and needs
             // no network call, so it answers instantly; competitors fall
@@ -339,14 +334,15 @@ export function SlotCard({ slot, market, onChange, onPickFile, onSubmit, onColla
 // recording. See src/lib/pagespeed.ts for what is and is not measurable
 // from a page on a different origin.
 
+// The resolved site is kept in slot state but never rendered: the VA is not
+// meant to see or change which page gets probed, only that a check runs.
 type PanelProps = {
   slot: SlotEntry;
-  locked: boolean;
   onChange: (patch: Partial<SlotEntry>) => void;
   resolveDomain: () => Promise<string | null>;
 };
 
-function PageSpeedPanel({ slot, locked, onChange, resolveDomain }: PanelProps) {
+function PageSpeedPanel({ slot, onChange, resolveDomain }: PanelProps) {
   const status = slot.perfStatus ?? 'idle';
   const measuring = status === 'measuring';
 
@@ -360,21 +356,19 @@ function PageSpeedPanel({ slot, locked, onChange, resolveDomain }: PanelProps) {
   const hasUrlRef = useRef(hasUrl);
   hasUrlRef.current = hasUrl;
 
-  // Typing a domain on a phone is the worst part of this flow, so prefill it
-  // from the brand's DX account. One lookup per brand — the panel is keyed
-  // on the brand, so it remounts when the VA opens a different slot.
+  // Resolve the brand's site once per slot (the panel is keyed on the brand,
+  // so it remounts when the VA opens a different one) and stash it for the
+  // submit-time probe.
   // No "already ran" ref guard here: StrictMode mounts, cleans up, then
   // mounts again, and a ref survives that cycle — the first pass would set
   // the guard, get cancelled by its own cleanup, and the second pass would
-  // bail out, leaving the field empty. The cancel flag alone is correct:
-  // the discarded pass drops its result and the live pass fills the field.
-  const [prefilled, setPrefilled] = useState(false);
+  // bail out, leaving the value unset. The cancel flag alone is correct:
+  // the discarded pass drops its result and the live pass stores the value.
   useEffect(() => {
     let cancelled = false;
     void resolveRef.current().then((domain) => {
       if (!cancelled && domain && !hasUrlRef.current) {
         onChangeRef.current({ perfUrl: domain.replace(/^https?:\/\//, '') });
-        setPrefilled(true);
       }
     });
     return () => {
@@ -386,7 +380,6 @@ function PageSpeedPanel({ slot, locked, onChange, resolveDomain }: PanelProps) {
   const response = result ? summarize(result.response) : null;
   const baseline = result ? summarize(result.baseline) : null;
   const brandUnreachable = result?.url !== null && response !== null && response.ok === 0;
-  const urlInvalid = Boolean(slot.perfUrl?.trim()) && !normalizeProbeUrl(slot.perfUrl!);
 
   return (
     <div className="perf">
@@ -395,42 +388,11 @@ function PageSpeedPanel({ slot, locked, onChange, resolveDomain }: PanelProps) {
         {status === 'done' && <span className="perf-ok"> measured ✓</span>}
       </div>
 
-      <div className="perf-row">
-        <input
-          type="url"
-          inputMode="url"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder="Brand site — leave empty for baseline only"
-          value={slot.perfUrl ?? ''}
-          disabled={locked}
-          onChange={(e) => {
-            setPrefilled(false);
-            onChange({
-              perfUrl: e.target.value,
-              // A new target invalidates the previous measurement.
-              perfStatus: 'idle',
-              perfResult: undefined,
-              perfError: undefined,
-              perfLink: undefined,
-            });
-          }}
-        />
-      </div>
-
-      {urlInvalid ? (
-        <div className="invalid-msg">Enter a site address like www.dee99d.com, or clear the field.</div>
-      ) : prefilled && status === 'idle' ? (
+      {status === 'idle' && (
         <div className="hint">
-          MP site for {slot.brand.name} — edit it if you tested a different page.
+          Submit first measures this phone's connection, then uploads the video.
         </div>
-      ) : status === 'idle' && !slot.perfUrl?.trim() ? (
-        <div className="hint">
-          No site on file for {slot.brand.name}. Submit still measures this device's
-          connection against the app server.
-        </div>
-      ) : null}
+      )}
 
       {measuring && (
         <div className="hint">
@@ -449,7 +411,7 @@ function PageSpeedPanel({ slot, locked, onChange, resolveDomain }: PanelProps) {
         <>
           {brandUnreachable && (
             <div className="invalid-msg">
-              No response from {result.url} — the site may be blocked on this network.
+              The brand site did not respond — it may be blocked on this network.
               Saved in the CSV as evidence.
             </div>
           )}

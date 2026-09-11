@@ -436,16 +436,6 @@ a.drive:hover{border-bottom-style:solid}
 /* ── page-speed probe ────────────────────────────────── */
 .perf{border-top:1px dashed var(--line);padding-top:12px}
 .perf-ok{color:var(--green,#34c724);font-weight:600}
-.perf-row{display:flex;gap:8px;align-items:stretch}
-.perf-row input{
-  flex:1;min-width:0;min-height:44px;padding:8px 10px;
-  background:var(--panel);border:1px solid var(--line);border-radius:8px;
-  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;
-  transition:border-color .2s ease, box-shadow .2s ease;
-}
-.perf-row input::placeholder{color:var(--faint)}
-.perf-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(62,47,224,.14)}
-.perf-row input:disabled{opacity:.6;background:var(--panel-2)}
 .perf-stats{
   display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;
   font-family:'JetBrains Mono',monospace;font-size:11px;
