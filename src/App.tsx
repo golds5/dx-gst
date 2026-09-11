@@ -3,7 +3,7 @@ import { ADMIN_PASSCODE, ADMIN_PASSCODE_READONLY, MARKETS } from './config';
 import { backend, USE_MOCK_GOOGLE } from './google';
 import { deviceLabelFor } from './lib/labels';
 import { buildLagNotes, pad2 } from './lib/naming';
-import { buildPerfCsv, measurePageSpeed } from './lib/pagespeed';
+import { buildPerfCsv, measurePageSpeed, normalizeProbeUrl } from './lib/pagespeed';
 import type { PageSpeedResult } from './lib/pagespeed';
 import type { Session, SlotEntry } from './types';
 import { AdminScreen } from './components/AdminScreen';
@@ -130,8 +130,12 @@ export default function App() {
         perfLink: undefined,
       });
       try {
+        // The site is auto-resolved and hidden from the VA, so a malformed
+        // value cannot be corrected by hand — fall back to a baseline-only
+        // run instead of failing the check.
+        const probeUrl = normalizeProbeUrl(slot.perfUrl ?? '') ? slot.perfUrl : null;
         perfResult = await measurePageSpeed({
-          url: slot.perfUrl,
+          url: probeUrl,
           onProgress: (done, total) => updateSlot(index, { perfProgress: { done, total } }),
         });
         updateSlot(index, { perfStatus: 'done', perfResult, perfProgress: undefined });

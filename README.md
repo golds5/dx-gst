@@ -101,8 +101,10 @@ folder (link added to the heatmap cell note). Its purpose is to tell a slow
 game *server* apart from a slow VA *connection*:
 
 - **Brand site** (`mp_domain` from [kz_sites.csv](./kz_sites.csv), falling back
-  to `brand_site`; editable in the slot card) — DNS + connect + TTFB via a
-  cross-origin `no-cors` fetch, plus a favicon round trip.
+  to `brand_site`, then to the DX Accounts sheet; resolved automatically and
+  not shown to the VA) — DNS + connect + TTFB via a cross-origin `no-cors`
+  fetch, plus a favicon round trip. Slots with no site on file, or a
+  malformed one, run baseline-only.
 - **Baseline** — full download of `/favicon.svg` from the app's own origin.
   Baseline fast + brand slow → brand server/CDN. Both slow → VA connection.
 - **Device network** — `navigator.connection` (4g/3g, downlink, RTT) and
